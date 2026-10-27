@@ -1,0 +1,98 @@
+DIR: 0_导航栏
+  FILE: 首页消息页1订单页1社区页个人信息页1-个人2.png (1318 bytes)
+  FILE: 首页消息页1订单页1社区页个人信息页1-个人3.png (1362 bytes)
+  FILE: 首页消息页1订单页1社区页个人信息页1-广场2.png (1400 bytes)
+  FILE: 首页消息页1订单页1社区页个人信息页1-广场3.png (1402 bytes)
+  FILE: 首页消息页1订单页1社区页个人信息页1-消息2.png (1311 bytes)
+  FILE: 首页消息页1订单页1社区页个人信息页1-消息3.png (1422 bytes)
+  FILE: 首页消息页1订单页1社区页个人信息页1-订单2.png (1085 bytes)
+  FILE: 首页消息页1订单页1社区页个人信息页1-订单3.png (1009 bytes)
+  FILE: 首页消息页1订单页1社区页个人信息页1-首页1.png (1814 bytes)
+  FILE: 首页消息页1订单页1社区页个人信息页1-首页2.png (7741 bytes)
+DIR: 10_反馈页
+  FILE: 反馈页_语音.png (1802 bytes)
+DIR: 11_首页
+  FILE: 首页-出行就医.png (1170 bytes)
+  FILE: 首页-出行接送.png (5325 bytes)
+  FILE: 首页-定位.png (944 bytes)
+  FILE: 首页-家政服务.png (2767 bytes)
+  FILE: 首页-帮帮帮蓝.png (30555 bytes)
+  FILE: 首页-物品代买.png (4084 bytes)
+  FILE: 首页-线上咨询.png (3594 bytes)
+  FILE: 首页-语音.png (1802 bytes)
+  FILE: 首页-陪伴购物.png (3856 bytes)
+DIR: 12_下单页
+  FILE: 下单页-语音.png (1802 bytes)
+DIR: 14_下单成功
+  FILE: 下单成功-毕设IP动作8.png (89976 bytes)
+DIR: 15_接单成功
+  FILE: 接单成功-毕设IP动作3.png (89674 bytes)
+DIR: 16_线上咨询
+DIR: 17_消息页1
+  FILE: 消息页-头像5.png (544903 bytes)
+  FILE: 消息页12聊天页12头像6.png (641293 bytes)
+  FILE: 消息页1消息页2-头像2.png (554743 bytes)
+  FILE: 消息页_搜索.png (4239 bytes)
+DIR: 18_消息页2
+  FILE: 消息页_搜索.png (4239 bytes)
+DIR: 1_出错页
+  FILE: 出错页_IP动作摊手.png (443696 bytes)
+DIR: 20_聊天页2
+  FILE: 聊天页-语音.png (6499 bytes)
+  FILE: 聊天页2-名片.png (2713 bytes)
+  FILE: 聊天页2-文件.png (4259 bytes)
+  FILE: 聊天页2-相册.png (3350 bytes)
+  FILE: 聊天页2-相机.png (4104 bytes)
+  FILE: 聊天页2-视频通话.png (3250 bytes)
+  FILE: 聊天页2-语音通话.png (4806 bytes)
+DIR: 26_社区页
+  FILE: 社区页-兑换.png (7301 bytes)
+  FILE: 社区页-发帖.png (2239 bytes)
+DIR: 28_评论页1
+  FILE: 收藏.png (3025 bytes)
+  FILE: 点赞.png (2033 bytes)
+DIR: 29_兑换页1
+  FILE: 兑换页1_样机1文创.png (70039 bytes)
+  FILE: 兑换页1_样机3文创.png (180273 bytes)
+  FILE: 兑换页1_牙膏.jpg (65989 bytes)
+  FILE: 兑换页1_纸巾.jpg (76936 bytes)
+  FILE: 兑换页1_袋子.jpg (99867 bytes)
+  FILE: 兑换页1_鸡蛋.jpg (98042 bytes)
+DIR: 2_闪屏页
+  FILE: 闪屏页-底图.png (1153670 bytes)
+  FILE: 闪屏页-开机标识RGB.png (5013 bytes)
+DIR: 30_兑换页2
+  FILE: 订单页兑换页2-勾.png (2630 bytes)
+DIR: 32_发布成功页
+  FILE: 发布成功-毕设IP动作7.png (82036 bytes)
+DIR: 33_兑换成功页
+  FILE: 兑换成功页_毕设IP动作6.png (91843 bytes)
+DIR: 34_提现
+DIR: 35_提现成功页
+  FILE: 提现成功页-加油打气.png (723231 bytes)
+DIR: 36_个人信息页1
+  FILE: 头像.png (520522 bytes)
+  FILE: 头像2.png (554743 bytes)
+  FILE: 头像3.png (549495 bytes)
+  FILE: 头像5.png (544903 bytes)
+  FILE: 头像6.png (641293 bytes)
+  FILE: 头像7.png (686755 bytes)
+DIR: 3_启动页1
+  FILE: 启动页1-开机标识RGB.png (5013 bytes)
+  FILE: 启动页1_帮白.png (28211 bytes)
+  FILE: 启动页1_底部插图.png (3488241 bytes)
+DIR: 40_信息验证
+  FILE: 信息验证-扫描.png (2603 bytes)
+DIR: 4_启动页2
+  FILE: 启动页2-开机标识RGB.png (5013 bytes)
+  FILE: 启动页2_帮白.png (28211 bytes)
+DIR: 5_登录页
+  FILE: 登录页-支付宝支付 (1).png (5322 bytes)
+  FILE: 登录页_帮帮帮.jpg (238484 bytes)
+  FILE: 登录页_底图.jpg (979882 bytes)
+  FILE: 登录页_微信.png (4479 bytes)
+  FILE: 登录页_银联.png (9471 bytes)
+DIR: 8_引导页2
+  FILE: 引导页2-插画终2.png (133510 bytes)
+DIR: 9_引导页3
+  FILE: 引导页3_插画终.png (152207 bytes)

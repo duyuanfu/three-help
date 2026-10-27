@@ -1,0 +1,48 @@
+/**
+ * 帮帮帮 - 适老化互助小程序全局设计规范变量
+ * 严格按照 /docs/ui/ 原型规范制定
+ */
+
+/* 核心品牌与功能色 */
+$primary-color: #1B65F0;        // 主题活力蓝
+$primary-light: #EBF2FF;        // 浅蓝背景/高亮底色
+$primary-dark: #124EC2;         // 按钮点击态
+
+$accent-color: #FFA940;         // 辅助暖橙色 (私信入口)
+$accent-yellow: #FFC000;        // 辅助亮黄色 (联系人入口)
+$accent-dark: #FA8C16;
+
+$success-color: #52C41A;        // 实名绿、匹配成功绿
+$warning-color: #FAAD14;
+$danger-color: #FF4D4F;         // 取消/错误红
+
+/* 文字色彩系统 */
+$text-primary: #1F2329;         // 一级标题、强文本（高对比黑）
+$text-regular: #333333;         // 正文通用文字
+$text-secondary: #666666;       // 次级信息
+$text-muted: #8F959E;           // 辅助灰、时间、占位符
+$text-white: #FFFFFF;
+
+/* 背景与边框 */
+$bg-color-page: #F6F7FB;        // 全局页面底色 (原型柔和灰白)
+$bg-color-card: #FFFFFF;        // 卡片纯白底色
+$border-color-light: #E5E6EB;   // 分割线与细边框
+$border-color-bold: #1B65F0;    // 表单选中激活边框
+
+/* 适老圆角与投影 */
+$radius-sm: 12rpx;
+$radius-base: 20rpx;
+$radius-lg: 32rpx;              // 大卡片圆角
+$radius-pill: 999rpx;           // 胶囊大圆角
+
+$shadow-card: 0 6rpx 20rpx rgba(27, 101, 240, 0.06);
+$shadow-floating: 0 10rpx 30rpx rgba(0, 0, 0, 0.08);
+
+/* 默认基准字号 (未缩放) */
+$font-xs: 24rpx;
+$font-sm: 28rpx;
+$font-base: 32rpx;
+$font-md: 36rpx;
+$font-lg: 42rpx;
+$font-xl: 48rpx;
+$font-xxl: 56rpx;
