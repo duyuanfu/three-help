@@ -16,7 +16,7 @@
     <view class="preview-chat-section">
       <!-- 对方发的消息 -->
       <view class="preview-msg-row left">
-        <image src="/static/avatars/lilaotou.png" mode="aspectFill" class="preview-avatar" />
+        <image :src="previewOtherAvatar" mode="aspectFill" class="preview-avatar" />
         <view class="preview-bubble">
           <text class="bubble-content">杨老太，明天晚上做我的舞伴去跳广场舞啊。</text>
         </view>
@@ -27,7 +27,7 @@
         <view class="preview-bubble">
           <text class="bubble-content">好啊，先这样约好</text>
         </view>
-        <image src="/static/avatars/zhangdongmei.png" mode="aspectFill" class="preview-avatar" />
+        <image :src="previewMyAvatar" mode="aspectFill" class="preview-avatar" />
       </view>
     </view>
 
@@ -82,9 +82,17 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useSettingStore } from '../../stores/setting';
+import { useUserStore } from '../../stores/user';
+import { useChatStore } from '../../stores/chat';
 
 const settingStore = useSettingStore();
+const userStore = useUserStore();
+const chatStore = useChatStore();
 const currentLevel = ref(settingStore.fontScaleLevel);
+
+// 预览头像：本人头像从 db 读取，对方头像取通讯录第一人（避免硬编码）
+const previewMyAvatar = computed(() => userStore.currentUser.avatar);
+const previewOtherAvatar = computed(() => chatStore.contacts[0]?.avatar || '');
 
 const fontLevels = [
   { bSize: '32rpx', scale: 0.85 },
@@ -146,13 +154,13 @@ const handleSave = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -201,7 +209,7 @@ const handleSave = () => {
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.04);
 
   .bubble-content {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     color: #000000;
     font-weight: 700;
     line-height: 1.5;
@@ -245,13 +253,13 @@ const handleSave = () => {
   padding: 0 20rpx;
 
   .label-item {
-    font-size: calc(30rpx * var(--font-scale));
+    font-size: calc(30rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
   }
 
   .label-center {
-    margin-left: 20rpx;
+    margin-left: 8rpx;
   }
 }
 
@@ -262,11 +270,11 @@ const handleSave = () => {
 
 .complete-btn {
   width: 100%;
-  height: calc(108rpx * var(--font-scale));
-  line-height: calc(108rpx * var(--font-scale));
+  height: calc(108rpx * var(--font-scale, 1));
+  line-height: calc(108rpx * var(--font-scale, 1));
   background-color: #1B65F0;
   color: #FFFFFF;
-  font-size: calc(44rpx * var(--font-scale));
+  font-size: calc(44rpx * var(--font-scale, 1));
   font-weight: 900;
   border-radius: 36rpx;
   letter-spacing: 8rpx;

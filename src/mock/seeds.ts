@@ -1,18 +1,20 @@
-import type { 
-  UserProfile, 
-  HelpOrder, 
-  ContactItem, 
-  ChatMessage, 
-  ChatSession, 
-  PostItem, 
-  MallGoods, 
-  ExchangeOrder 
+import type {
+  UserProfile,
+  HelpOrder,
+  HelperInfo,
+  ContactItem,
+  ChatMessage,
+  ChatSession,
+  PostItem,
+  CommentItem,
+  MallGoods,
+  ExchangeOrder
 } from '../types';
 
 export const initialUser: UserProfile = {
   id: 'u_zhangdongmei',
   name: '张冬梅',
-  avatar: '/static/avatars/zhangdongmei.png',
+  avatar: '/static/avatars/zhangdongmei.jpg',
   gender: '女',
   age: 65,
   phone: '138****5920',
@@ -24,12 +26,37 @@ export const initialUser: UserProfile = {
   points: 1000
 };
 
+// 示例志愿者（帮手）列表：接单默认帮手等场景统一从 helpers 表读取
+export const initialHelpers: HelperInfo[] = [
+  {
+    id: 'u_wuxiaoying',
+    name: '吴小应',
+    tag: '@学生',
+    avatar: '/static/avatars/malingling.jpg',
+    phone: '13912345678'
+  },
+  {
+    id: 'u_liuxiaoyan',
+    name: '刘小燕',
+    tag: '@学生',
+    avatar: '/static/avatars/malingling.jpg',
+    phone: '13987654321'
+  },
+  {
+    id: 'u_languiping',
+    name: '蓝贵萍',
+    tag: '@村支书',
+    avatar: '/static/avatars/wangqiuhua.jpg',
+    phone: '13866668888'
+  }
+];
+
 export const initialOrders: HelpOrder[] = [
   {
     id: 'ord_001',
     creatorId: 'u_zhangdongmei',
     creatorName: '张冬梅',
-    creatorAvatar: '/static/avatars/zhangdongmei.png',
+    creatorAvatar: '/static/avatars/zhangdongmei.jpg',
     category: 'medical',
     title: '医院陪诊',
     content: '泉州市第一医院骨科门诊陪同挂号取药与照料',
@@ -42,7 +69,7 @@ export const initialOrders: HelpOrder[] = [
       id: 'u_wuxiaoying',
       name: '吴小应',
       tag: '@学生',
-      avatar: '/static/avatars/malingling.png',
+      avatar: '/static/avatars/malingling.jpg',
       phone: '13912345678'
     },
     createdAt: '2025/09/02 18:00'
@@ -51,7 +78,7 @@ export const initialOrders: HelpOrder[] = [
     id: 'ord_002',
     creatorId: 'u_zhangdongmei',
     creatorName: '张冬梅',
-    creatorAvatar: '/static/avatars/zhangdongmei.png',
+    creatorAvatar: '/static/avatars/zhangdongmei.jpg',
     category: 'delivery',
     title: '帮抢鸡蛋',
     content: '永辉超市早市特价土鸡蛋抢购代买送至家门',
@@ -64,7 +91,7 @@ export const initialOrders: HelpOrder[] = [
       id: 'u_liuxiaoyan',
       name: '刘小燕',
       tag: '@学生',
-      avatar: '/static/avatars/malingling.png',
+      avatar: '/static/avatars/malingling.jpg',
       phone: '13987654321'
     },
     createdAt: '2025/09/03 10:20'
@@ -73,7 +100,7 @@ export const initialOrders: HelpOrder[] = [
     id: 'ord_003',
     creatorId: 'u_zhangdongmei',
     creatorName: '张冬梅',
-    creatorAvatar: '/static/avatars/zhangdongmei.png',
+    creatorAvatar: '/static/avatars/zhangdongmei.jpg',
     category: 'teach_phone',
     title: '教会手机',
     content: '教老人使用微信视频通话、线上生活缴费与挂号操作',
@@ -86,7 +113,7 @@ export const initialOrders: HelpOrder[] = [
       id: 'u_languiping',
       name: '蓝贵萍',
       tag: '@村支书',
-      avatar: '/static/avatars/wangqiuhua.png',
+      avatar: '/static/avatars/wangqiuhua.jpg',
       phone: '13866668888'
     },
     createdAt: '2025/08/25 10:00',
@@ -96,7 +123,7 @@ export const initialOrders: HelpOrder[] = [
     id: 'ord_004',
     creatorId: 'u_wangnainai',
     creatorName: '王奶奶',
-    creatorAvatar: '/static/avatars/wangnainai.png',
+    creatorAvatar: '/static/avatars/wangnainai.jpg',
     category: 'shopping',
     title: '陪散心',
     content: '需要有人来陪散心',
@@ -150,7 +177,7 @@ export const initialContacts: ContactItem[] = [
   {
     id: 'c_li',
     name: '李老头',
-    avatar: '/static/avatars/lilaotou.png',
+    avatar: '/static/avatars/lilaotou.jpg',
     letter: 'L',
     phone: '13800000001',
     isFriend: true
@@ -158,7 +185,7 @@ export const initialContacts: ContactItem[] = [
   {
     id: 'c_ma',
     name: '马玲玲',
-    avatar: '/static/avatars/malingling.png',
+    avatar: '/static/avatars/malingling.jpg',
     tag: '@学生',
     letter: 'M',
     phone: '13900000002',
@@ -167,7 +194,7 @@ export const initialContacts: ContactItem[] = [
   {
     id: 'c_wang',
     name: '王秋华',
-    avatar: '/static/avatars/wangqiuhua.png',
+    avatar: '/static/avatars/wangqiuhua.jpg',
     tag: '@村委会干事',
     letter: 'W',
     phone: '13700000003',
@@ -181,7 +208,7 @@ export const initialSessions: ChatSession[] = [
     targetUser: {
       id: 'c_li',
       name: '李老头',
-      avatar: '/static/avatars/lilaotou.png'
+      avatar: '/static/avatars/lilaotou.jpg'
     },
     lastMessage: '好啊，先这样约好',
     lastTime: '19 : 58',
@@ -192,7 +219,7 @@ export const initialSessions: ChatSession[] = [
     targetUser: {
       id: 'c_ma',
       name: '马玲玲',
-      avatar: '/static/avatars/malingling.png',
+      avatar: '/static/avatars/malingling.jpg',
       tag: '@学生'
     },
     lastMessage: '阿姨，明天上午九点我准时在楼下等您！',
@@ -204,7 +231,7 @@ export const initialSessions: ChatSession[] = [
     targetUser: {
       id: 'c_wang',
       name: '王秋华',
-      avatar: '/static/avatars/wangqiuhua.png',
+      avatar: '/static/avatars/wangqiuhua.jpg',
       tag: '@村委会干事'
     },
     lastMessage: '张老师，社区端午节的慰问品明天统一发放。',
@@ -243,7 +270,7 @@ export const initialPosts: PostItem[] = [
     id: 'post_001',
     authorId: 'u_wangnainai',
     authorName: '王奶奶',
-    authorAvatar: '/static/avatars/wangnainai.png',
+    authorAvatar: '/static/avatars/wangnainai.jpg',
     content: '马玲玲那孩子脾气好又有耐心',
     likeCount: 12,
     commentCount: 1,
@@ -254,12 +281,51 @@ export const initialPosts: PostItem[] = [
     id: 'post_002',
     authorId: 'u_zhangdongmei',
     authorName: '张冬梅',
-    authorAvatar: '/static/avatars/zhangdongmei.png',
+    authorAvatar: '/static/avatars/zhangdongmei.jpg',
     content: '感谢吴小应同学今天陪我去第一医院做检查，跑前跑后非常周到，现在的大学生真有爱心！',
     likeCount: 28,
     commentCount: 4,
     timeAgo: '昨天',
     isLiked: true
+  }
+];
+
+// 帖子评论种子数据（与各帖 commentCount 保持一致）
+export const initialComments: CommentItem[] = [
+  {
+    id: 'cmt_001',
+    postId: 'post_001',
+    userName: '张冬梅',
+    avatar: '/static/avatars/zhangdongmei.jpg',
+    content: '下次介绍给我'
+  },
+  {
+    id: 'cmt_002',
+    postId: 'post_002',
+    userName: '王奶奶',
+    avatar: '/static/avatars/wangnainai.jpg',
+    content: '很乖的一小女孩'
+  },
+  {
+    id: 'cmt_003',
+    postId: 'post_002',
+    userName: '李老头',
+    avatar: '/static/avatars/lilaotou.jpg',
+    content: '现在的好学生真是难得'
+  },
+  {
+    id: 'cmt_004',
+    postId: 'post_002',
+    userName: '马玲玲',
+    avatar: '/static/avatars/malingling.jpg',
+    content: '张阿姨身体要紧，下次还来陪您！'
+  },
+  {
+    id: 'cmt_005',
+    postId: 'post_002',
+    userName: '王秋华',
+    avatar: '/static/avatars/wangqiuhua.jpg',
+    content: '社区已记录，给您点赞！'
   }
 ];
 

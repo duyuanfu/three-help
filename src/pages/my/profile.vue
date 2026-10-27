@@ -72,6 +72,7 @@
 import { computed } from 'vue';
 import { useUserStore } from '../../stores/user';
 import { useSettingStore } from '../../stores/setting';
+import { chooseAvatar } from '../../utils/avatar';
 
 const userStore = useUserStore();
 const settingStore = useSettingStore();
@@ -87,8 +88,12 @@ const goBack = () => {
 const changeAvatar = () => {
   uni.showActionSheet({
     itemList: ['拍照', '从相册选择'],
-    success: () => {
-      uni.showToast({ title: '头像更新成功', icon: 'success' });
+    success: async (res) => {
+      const avatarPath = await chooseAvatar(res.tapIndex === 0 ? 'camera' : 'album');
+      if (avatarPath) {
+        userStore.updateProfile({ avatar: avatarPath });
+        uni.showToast({ title: '头像更新成功', icon: 'success' });
+      }
     }
   });
 };
@@ -162,13 +167,13 @@ const handleComplete = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -191,7 +196,7 @@ const handleComplete = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: calc(108rpx * var(--font-scale));
+  min-height: calc(108rpx * var(--font-scale, 1));
   padding: 20rpx 0;
   border-bottom: 2rpx solid #E5E7EB;
 
@@ -201,14 +206,14 @@ const handleComplete = () => {
 }
 
 .row-label {
-  font-size: calc(36rpx * var(--font-scale));
+  font-size: calc(36rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1F2329;
   width: 170rpx;
 }
 
 .row-val-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   font-weight: 800;
   color: #1F2329;
   text-align: right;
@@ -236,11 +241,11 @@ const handleComplete = () => {
 
 .complete-btn {
   width: 100%;
-  height: calc(108rpx * var(--font-scale));
-  line-height: calc(108rpx * var(--font-scale));
+  height: calc(108rpx * var(--font-scale, 1));
+  line-height: calc(108rpx * var(--font-scale, 1));
   background-color: #1B65F0;
   color: #FFFFFF;
-  font-size: calc(44rpx * var(--font-scale));
+  font-size: calc(44rpx * var(--font-scale, 1));
   font-weight: 900;
   border-radius: 36rpx;
   letter-spacing: 8rpx;

@@ -86,8 +86,8 @@ const pageStyle = computed(() => ({
 }));
 
 const contactInfo = ref({
-  name: '李老头',
-  avatar: '/static/avatars/lilaotou.png',
+  name: '',
+  avatar: '',
   gender: '男',
   age: 56,
   address: '福建省泉州市',
@@ -95,12 +95,17 @@ const contactInfo = ref({
 });
 
 onLoad((options) => {
+  let found = null;
   if (options && options.id) {
-    const found = chatStore.contacts.find((c) => c.id === options.id);
-    if (found) {
-      contactInfo.value.name = found.name;
-      contactInfo.value.avatar = found.avatar;
-    }
+    found = chatStore.contacts.find((c) => c.id === options.id);
+  }
+  // 兜底：从通讯录读取第一个联系人，避免硬编码
+  if (!found && chatStore.contacts.length > 0) {
+    found = chatStore.contacts[0];
+  }
+  if (found) {
+    contactInfo.value.name = found.name;
+    contactInfo.value.avatar = found.avatar;
   }
 });
 
@@ -134,13 +139,13 @@ const goBack = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -180,7 +185,7 @@ const goBack = () => {
   flex-direction: column;
 
   .user-name {
-    font-size: calc(40rpx * var(--font-scale));
+    font-size: calc(40rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
     margin-bottom: 12rpx;
@@ -199,7 +204,7 @@ const goBack = () => {
     }
 
     .realname-label {
-      font-size: calc(30rpx * var(--font-scale));
+      font-size: calc(30rpx * var(--font-scale, 1));
       font-weight: 800;
       color: #1F2329;
     }
@@ -209,7 +214,7 @@ const goBack = () => {
 .added-pill-btn {
   background-color: #EBF2FF;
   color: #1B65F0;
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
   font-weight: 800;
   border-radius: 36rpx;
   padding: 0 32rpx;
@@ -242,14 +247,14 @@ const goBack = () => {
   }
 
   .archive-label {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
     width: 170rpx;
   }
 
   .archive-val {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
   }
@@ -259,7 +264,7 @@ const goBack = () => {
   margin-bottom: 20rpx;
 
   .section-title {
-    font-size: calc(36rpx * var(--font-scale));
+    font-size: calc(36rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
@@ -292,20 +297,20 @@ const goBack = () => {
   flex-direction: column;
 
   .post-author-name {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
 
   .post-time-text {
-    font-size: calc(26rpx * var(--font-scale));
+    font-size: calc(26rpx * var(--font-scale, 1));
     color: #8F959E;
   }
 }
 
 .post-text-box {
   .post-body-text {
-    font-size: calc(36rpx * var(--font-scale));
+    font-size: calc(36rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
     line-height: 1.5;

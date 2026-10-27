@@ -139,7 +139,7 @@ const handleCompleteReg = () => {
   userStore.login();
   uni.showToast({ title: '注册完成，欢迎来到帮帮帮！', icon: 'success' });
   setTimeout(() => {
-    uni.switchTab({ url: '/pages/index/index' });
+    uni.reLaunch({ url: '/pages/common/onboarding' });
   }, 600);
 };
 </script>
@@ -195,7 +195,7 @@ const handleCompleteReg = () => {
 .input-card-wrap {
   background-color: #FFFFFF;
   border-radius: 40rpx;
-  height: calc(116rpx * var(--font-scale));
+  height: calc(116rpx * var(--font-scale, 1));
   padding: 0 36rpx;
   display: flex;
   align-items: center;
@@ -209,7 +209,7 @@ const handleCompleteReg = () => {
   margin-right: 20rpx;
 
   .prefix-text {
-    font-size: calc(36rpx * var(--font-scale));
+    font-size: calc(36rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
     margin-right: 18rpx;
@@ -224,14 +224,14 @@ const handleCompleteReg = () => {
 
 .phone-input {
   flex: 1;
-  font-size: calc(36rpx * var(--font-scale));
+  font-size: calc(36rpx * var(--font-scale, 1));
   font-weight: 800;
   color: #1F2329;
 }
 
 .placeholder-text {
   color: #B0B5BD;
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
 }
 
 .verify-code-section {
@@ -240,7 +240,7 @@ const handleCompleteReg = () => {
   align-items: center;
 
   .verify-title {
-    font-size: calc(44rpx * var(--font-scale));
+    font-size: calc(44rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #000000;
     letter-spacing: 2rpx;
@@ -276,7 +276,7 @@ const handleCompleteReg = () => {
   margin-bottom: 20rpx;
 
   .countdown-text {
-    font-size: calc(30rpx * var(--font-scale));
+    font-size: calc(30rpx * var(--font-scale, 1));
     color: #1F2329;
     font-weight: 700;
   }
@@ -292,11 +292,11 @@ const handleCompleteReg = () => {
 
 .step-btn {
   width: 100%;
-  height: calc(112rpx * var(--font-scale));
-  line-height: calc(112rpx * var(--font-scale));
+  height: calc(112rpx * var(--font-scale, 1));
+  line-height: calc(112rpx * var(--font-scale, 1));
   background-color: #1B65F0;
   color: #FFFFFF;
-  font-size: calc(48rpx * var(--font-scale));
+  font-size: calc(48rpx * var(--font-scale, 1));
   font-weight: 900;
   border-radius: 36rpx;
   letter-spacing: 12rpx;
@@ -312,7 +312,7 @@ const handleCompleteReg = () => {
   margin-top: 28rpx;
   padding: 10rpx 0;
   text-align: center;
-  font-size: calc(28rpx * var(--font-scale));
+  font-size: calc(28rpx * var(--font-scale, 1));
   font-weight: 600;
   color: #7A8088;
 }

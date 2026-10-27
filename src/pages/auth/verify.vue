@@ -100,7 +100,7 @@ const handleCompleteVerify = () => {
 }
 
 .back-text {
-  font-size: calc(36rpx * var(--font-scale));
+  font-size: calc(36rpx * var(--font-scale, 1));
   color: #000000;
   font-weight: 800;
 }
@@ -200,7 +200,7 @@ const handleCompleteVerify = () => {
 
 .prompt-text-wrap {
   .prompt-text {
-    font-size: calc(40rpx * var(--font-scale));
+    font-size: calc(40rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
     letter-spacing: 2rpx;
@@ -213,11 +213,11 @@ const handleCompleteVerify = () => {
 
 .complete-verify-btn {
   width: 100%;
-  height: calc(112rpx * var(--font-scale));
-  line-height: calc(112rpx * var(--font-scale));
+  height: calc(112rpx * var(--font-scale, 1));
+  line-height: calc(112rpx * var(--font-scale, 1));
   background-color: #1B65F0;
   color: #FFFFFF;
-  font-size: calc(48rpx * var(--font-scale));
+  font-size: calc(48rpx * var(--font-scale, 1));
   font-weight: 900;
   border-radius: 36rpx;
   letter-spacing: 12rpx;

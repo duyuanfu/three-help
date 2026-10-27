@@ -58,7 +58,7 @@
       <!-- 辅助链接 -->
       <view class="helper-links-row">
         <text class="link-item" @tap="handleForgot">忘记密码？</text>
-        <text class="link-item" @tap="goToFaq">帮助与反馈</text>
+        <text class="link-item" @tap="goToFeedback">帮助与反馈</text>
       </view>
 
       <!-- 其它登录方式 (需求文档明确要求：UI中银联图标改成支付宝) -->
@@ -110,7 +110,7 @@ const handleLogin = () => {
     userStore.login();
     uni.showToast({ title: '登录成功', icon: 'success' });
     setTimeout(() => {
-      uni.switchTab({ url: '/pages/index/index' });
+      uni.reLaunch({ url: '/pages/index/index' });
     }, 500);
   }, 600);
 };
@@ -134,9 +134,9 @@ const handleForgot = () => {
   });
 };
 
-const goToFaq = () => {
+const goToFeedback = () => {
   uni.navigateTo({
-    url: '/pages/my/faq'
+    url: '/pages/my/feedback'
   });
 };
 
@@ -147,7 +147,7 @@ const quickWeChatLogin = () => {
     userStore.login();
     uni.showToast({ title: '微信一键登录成功', icon: 'success' });
     setTimeout(() => {
-      uni.switchTab({ url: '/pages/index/index' });
+      uni.reLaunch({ url: '/pages/common/onboarding' });
     }, 500);
   }, 600);
 };
@@ -159,7 +159,7 @@ const quickAlipayLogin = () => {
     userStore.login();
     uni.showToast({ title: '支付宝一键登录成功', icon: 'success' });
     setTimeout(() => {
-      uni.switchTab({ url: '/pages/index/index' });
+      uni.reLaunch({ url: '/pages/common/onboarding' });
     }, 500);
   }, 600);
 };

@@ -55,6 +55,7 @@
             "urlCheck" : false
         },
         "usingComponents" : true,
+        "lazyCodeLoading" : "requiredComponents",
         "requiredPrivateInfos" : [ "chooseLocation" ],
         "permission" : {
             "scope.userLocation" : {

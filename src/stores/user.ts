@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia';
 import type { UserProfile } from '../types';
 import { initialUser } from '../mock/seeds';
-
-const STORAGE_KEY = 'bbb_user';
+import { TABLES } from '../utils/db';
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -13,7 +12,7 @@ export const useUserStore = defineStore('user', {
   actions: {
     initUser() {
       try {
-        const cached = uni.getStorageSync(STORAGE_KEY);
+        const cached = TABLES.user.all();
         if (cached && cached.id) {
           this.currentUser = cached;
           this.isLoggedIn = Boolean(cached.isLoggedIn);
@@ -26,7 +25,7 @@ export const useUserStore = defineStore('user', {
     },
     saveUser() {
       try {
-        uni.setStorageSync(STORAGE_KEY, {
+        TABLES.user.replaceAll({
           ...this.currentUser,
           isLoggedIn: this.isLoggedIn
         });

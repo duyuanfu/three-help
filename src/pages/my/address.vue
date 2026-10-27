@@ -47,11 +47,55 @@
 
       <!-- + 新增地址大按钮 (原型白底圆角样式) -->
       <view class="add-addr-btn-wrap">
-        <button class="add-address-btn" hover-class="btn-hover" @tap="addNewAddress">
+        <button class="add-address-btn" hover-class="btn-hover" @tap="openAddDialog">
           + 新增地址
         </button>
       </view>
     </scroll-view>
+
+    <!-- 新增地址弹窗 (姓名 + 手机号 + 详细地址) -->
+    <view v-if="showAddDialog" class="dialog-mask" @tap="closeAddDialog">
+      <view class="dialog-card" @tap.stop>
+        <text class="dialog-title">新增收货地址</text>
+
+        <view class="dialog-field">
+          <text class="field-label">姓名</text>
+          <input
+            v-model="form.name"
+            class="field-input"
+            placeholder="请输入收件人姓名"
+            placeholder-class="field-placeholder"
+          />
+        </view>
+
+        <view class="dialog-field">
+          <text class="field-label">手机号</text>
+          <input
+            v-model="form.phone"
+            class="field-input"
+            type="number"
+            maxlength="11"
+            placeholder="请输入11位手机号"
+            placeholder-class="field-placeholder"
+          />
+        </view>
+
+        <view class="dialog-field">
+          <text class="field-label">详细地址</text>
+          <input
+            v-model="form.detail"
+            class="field-input"
+            placeholder="如：泉州市鲤城区西街..."
+            placeholder-class="field-placeholder"
+          />
+        </view>
+
+        <view class="dialog-btn-row">
+          <button class="dialog-btn cancel" hover-class="btn-hover" @tap="closeAddDialog">取消</button>
+          <button class="dialog-btn confirm" hover-class="btn-hover" @tap="confirmAddAddress">确定</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -59,6 +103,7 @@
 import { ref, computed } from 'vue';
 import { useUserStore } from '../../stores/user';
 import { useSettingStore } from '../../stores/setting';
+import { TABLES } from '../../utils/db';
 
 const userStore = useUserStore();
 const settingStore = useSettingStore();
@@ -67,20 +112,44 @@ const pageStyle = computed(() => ({
   '--font-scale': settingStore.fontScale
 }));
 
-const addressList = ref([
+interface AddressItem {
+  id: string;
+  name: string;
+  phone: string;
+  detail: string;
+  isDefault: boolean;
+}
+
+const DEFAULT_ADDRESSES: AddressItem[] = [
   {
-    name: '张冬梅',
+    id: 'addr_default_1',
+    name: '',
     phone: '12345678987',
     detail: '福建省泉州市丰泽区凤阳小区8号楼302',
     isDefault: true
   },
   {
+    id: 'addr_default_2',
     name: '张晓梅',
     phone: '12345678987',
     detail: '福建省厦门市集美区杏林湾路***',
     isDefault: false
   }
-]);
+];
+
+// 默认地址收件人从 db 当前用户读取，避免硬编码姓名
+const addressSeeds: AddressItem[] = DEFAULT_ADDRESSES.map((a, i) =>
+  i === 0 ? { ...a, name: userStore.currentUser.name } : a
+);
+
+// 地址表落库：首次进入注入默认地址，后续增删改全部持久化
+const persistingList: AddressItem[] = TABLES.addresses.all(addressSeeds);
+
+const addressList = ref<AddressItem[]>(persistingList);
+
+const saveAddresses = () => {
+  TABLES.addresses.replaceAll(addressList.value);
+};
 
 const goBack = () => {
   uni.navigateBack({ delta: 1 });
@@ -90,6 +159,7 @@ const setDefaultAddress = (idx: number) => {
   addressList.value.forEach((item, i) => {
     item.isDefault = i === idx;
   });
+  saveAddresses();
   userStore.updateProfile({ address: addressList.value[idx].detail });
   uni.showToast({ title: '已设为默认地址', icon: 'success' });
 };
@@ -100,26 +170,59 @@ const deleteAddress = (idx: number) => {
     return;
   }
   addressList.value.splice(idx, 1);
+  saveAddresses();
   uni.showToast({ title: '地址已删除', icon: 'success' });
 };
 
-const addNewAddress = () => {
-  uni.showModal({
-    title: '新增收货地址',
-    editable: true,
-    placeholderText: '请输入详细地址，如“泉州市鲤城区西街...”',
-    success: (res) => {
-      if (res.confirm && res.content) {
-        addressList.value.push({
-          name: userStore.currentUser.name,
-          phone: '138****5920',
-          detail: res.content,
-          isDefault: false
-        });
-        uni.showToast({ title: '新增成功', icon: 'success' });
-      }
-    }
+// 新增地址弹窗：支持录入姓名、手机号、详细地址
+const showAddDialog = ref(false);
+const form = ref({
+  name: '',
+  phone: '',
+  detail: ''
+});
+
+const openAddDialog = () => {
+  form.value = {
+    name: userStore.currentUser.name,
+    phone: '',
+    detail: ''
+  };
+  showAddDialog.value = true;
+};
+
+const closeAddDialog = () => {
+  showAddDialog.value = false;
+};
+
+const confirmAddAddress = () => {
+  const name = form.value.name.trim();
+  const phone = form.value.phone.trim();
+  const detail = form.value.detail.trim();
+
+  if (!name) {
+    uni.showToast({ title: '请输入收件人姓名', icon: 'none' });
+    return;
+  }
+  if (!phone || phone.length !== 11) {
+    uni.showToast({ title: '请输入有效的11位手机号', icon: 'none' });
+    return;
+  }
+  if (!detail) {
+    uni.showToast({ title: '请输入详细地址', icon: 'none' });
+    return;
+  }
+
+  addressList.value.push({
+    id: 'addr_' + Date.now(),
+    name,
+    phone,
+    detail,
+    isDefault: false
   });
+  saveAddresses();
+  showAddDialog.value = false;
+  uni.showToast({ title: '新增成功', icon: 'success' });
 };
 </script>
 
@@ -148,13 +251,13 @@ const addNewAddress = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -190,7 +293,7 @@ const addNewAddress = () => {
   margin-bottom: 14rpx;
 
   .user-info-text {
-    font-size: calc(36rpx * var(--font-scale));
+    font-size: calc(36rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
@@ -200,7 +303,7 @@ const addNewAddress = () => {
   margin-bottom: 28rpx;
 
   .address-detail-text {
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
     line-height: 1.4;
@@ -249,7 +352,7 @@ const addNewAddress = () => {
   }
 
   .radio-label {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
@@ -266,9 +369,9 @@ const addNewAddress = () => {
   color: #1F2329;
   border: 3rpx solid #E5E7EB;
   border-radius: 40rpx;
-  height: calc(108rpx * var(--font-scale));
-  line-height: calc(108rpx * var(--font-scale));
-  font-size: calc(38rpx * var(--font-scale));
+  height: calc(108rpx * var(--font-scale, 1));
+  line-height: calc(108rpx * var(--font-scale, 1));
+  font-size: calc(38rpx * var(--font-scale, 1));
   font-weight: 900;
   box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.04);
 
@@ -279,5 +382,96 @@ const addNewAddress = () => {
 
 .btn-hover {
   opacity: 0.88;
+}
+
+/* 新增地址弹窗 */
+.dialog-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog-card {
+  width: 620rpx;
+  background-color: #FFFFFF;
+  border-radius: 36rpx;
+  padding: 40rpx 36rpx 32rpx 36rpx;
+  box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.18);
+}
+
+.dialog-title {
+  display: block;
+  text-align: center;
+  font-size: calc(36rpx * var(--font-scale, 1));
+  font-weight: 900;
+  color: #1F2329;
+  margin-bottom: 32rpx;
+}
+
+.dialog-field {
+  display: flex;
+  align-items: center;
+  background-color: #F6F7FB;
+  border-radius: 24rpx;
+  height: calc(96rpx * var(--font-scale, 1));
+  padding: 0 28rpx;
+  margin-bottom: 24rpx;
+
+  .field-label {
+    width: 150rpx;
+    font-size: calc(30rpx * var(--font-scale, 1));
+    font-weight: 800;
+    color: #1F2329;
+    flex-shrink: 0;
+  }
+
+  .field-input {
+    flex: 1;
+    font-size: calc(30rpx * var(--font-scale, 1));
+    color: #1F2329;
+  }
+}
+
+.field-placeholder {
+  color: #B0B4BA;
+  font-size: calc(28rpx * var(--font-scale, 1));
+}
+
+.dialog-btn-row {
+  display: flex;
+  gap: 24rpx;
+  margin-top: 12rpx;
+}
+
+.dialog-btn {
+  flex: 1;
+  height: calc(92rpx * var(--font-scale, 1));
+  line-height: calc(92rpx * var(--font-scale, 1));
+  border-radius: 40rpx;
+  font-size: calc(32rpx * var(--font-scale, 1));
+  font-weight: 800;
+  border: none;
+
+  &::after {
+    border: none;
+  }
+
+  &.cancel {
+    background-color: #F1F2F5;
+    color: #1F2329;
+  }
+
+  &.confirm {
+    background-color: #1B65F0;
+    color: #FFFFFF;
+    box-shadow: 0 8rpx 24rpx rgba(27, 101, 240, 0.25);
+  }
 }
 </style>

@@ -1,11 +1,10 @@
 import { defineStore } from 'pinia';
 import type { MallGoods, CartItem, ExchangeOrder } from '../types';
 import { initialGoods } from '../mock/seeds';
+import { TABLES } from '../utils/db';
 import { useUserStore } from './user';
 import { useOrderStore } from './order';
 
-const GOODS_KEY = 'bbb_goods';
-const CART_KEY = 'bbb_cart';
 // 上一版临时增加的 4 个占位商品，现已由 2 个文创商品替代
 const OBSOLETE_GOODS_IDS = ['g_egg_two', 'g_bag_two', 'g_paste_two', 'g_tissue_two'];
 
@@ -25,10 +24,8 @@ export const useMallStore = defineStore('mall', {
   actions: {
     initMall() {
       try {
-        const cachedGoods = uni.getStorageSync(GOODS_KEY);
-        const cachedList: MallGoods[] = Array.isArray(cachedGoods)
-          ? cachedGoods.filter((item) => !OBSOLETE_GOODS_IDS.includes(item.id))
-          : [];
+        const cachedList = TABLES.goods
+          .find((item) => !OBSOLETE_GOODS_IDS.includes(item.id));
         const cachedIds = new Set(cachedList.map((item) => item.id));
 
         // 合并新增的 mock 商品，并清理旧版占位商品
@@ -36,25 +33,20 @@ export const useMallStore = defineStore('mall', {
           ...cachedList,
           ...initialGoods.filter((item) => !cachedIds.has(item.id))
         ];
-        uni.setStorageSync(GOODS_KEY, this.goods);
+        TABLES.goods.replaceAll(this.goods);
 
-        const cachedCart = uni.getStorageSync(CART_KEY);
-        const cartList: CartItem[] = Array.isArray(cachedCart) ? cachedCart : [];
+        const cartList: CartItem[] = TABLES.cart.all([]);
         const validGoodsIds = new Set(this.goods.map((item) => item.id));
         this.cart = cartList.filter((item) => item?.goods && validGoodsIds.has(item.goods.id));
         if (this.cart.length !== cartList.length) {
-          uni.setStorageSync(CART_KEY, this.cart);
+          TABLES.cart.replaceAll(this.cart);
         }
       } catch (e) {
         console.error('Failed to init mall', e);
       }
     },
     saveCart() {
-      try {
-        uni.setStorageSync(CART_KEY, this.cart);
-      } catch (e) {
-        console.error('Failed to save cart', e);
-      }
+      TABLES.cart.replaceAll(this.cart);
     },
     addToCart(goodsId: string) {
       const g = this.goods.find((item) => item.id === goodsId);
@@ -86,7 +78,7 @@ export const useMallStore = defineStore('mall', {
     },
     clearCart() {
       this.cart = [];
-      this.saveCart();
+      TABLES.cart.replaceAll([]);
     },
     // 确认兑换下单
     confirmExchange(deliveryAddress?: string) {
@@ -106,7 +98,7 @@ export const useMallStore = defineStore('mall', {
       userStore.deductPoints(totalCost);
 
       const firstItem = this.cart[0];
-      const goodsSummary = this.cart.length === 1 
+      const goodsSummary = this.cart.length === 1
         ? `${firstItem.goods.name} × ${firstItem.count}`
         : `${firstItem.goods.name}等${this.totalCartCount}件物资`;
 

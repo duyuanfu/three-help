@@ -19,3 +19,7 @@ dist
 *.njsproj
 *.sln
 *.sw?
+# 项目本地数据（会话记忆、工作室配置）
+.workbuddy/
+# 头像原图备份（体积大，按需本地保留）
+assets_original_backup/

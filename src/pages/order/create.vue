@@ -47,20 +47,20 @@
         </picker>
       </view>
 
-      <!-- 3. 约定地点（支持手动输入 + 地图定位） -->
+      <!-- 3. 约定地点（支持手动输入 + 地图定位）：定位在左，地址在右 -->
       <view class="field-group">
         <text class="field-label">约定地点</text>
         <view class="input-box">
+          <view class="loc-btn" hover-class="loc-btn-hover" @tap.stop="chooseLocation">
+            <image src="/static/common/location.png" mode="aspectFit" class="loc-icon" />
+            <text class="loc-btn-text">定位</text>
+          </view>
           <input 
             v-model="address" 
             class="elder-input" 
             placeholder="请输入地点..." 
             placeholder-class="placeholder-text"
           />
-          <view class="loc-btn" hover-class="loc-btn-hover" @tap.stop="chooseLocation">
-            <image src="/static/common/location.png" mode="aspectFit" class="loc-icon" />
-            <text class="loc-btn-text">定位</text>
-          </view>
         </view>
       </view>
 
@@ -269,13 +269,13 @@ const handleSubmit = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -295,7 +295,7 @@ const handleSubmit = () => {
 
 .field-label {
   display: block;
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   font-weight: 800;
   color: #1F2329;
   margin-bottom: 16rpx;
@@ -312,7 +312,7 @@ const handleSubmit = () => {
 .elder-textarea {
   width: 100%;
   height: 200rpx;
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
   color: #1F2329;
   line-height: 1.5;
 }
@@ -321,7 +321,7 @@ const handleSubmit = () => {
   background-color: #FFFFFF;
   border: 3rpx solid #1B65F0;
   border-radius: 36rpx;
-  height: calc(100rpx * var(--font-scale));
+  height: calc(100rpx * var(--font-scale, 1));
   padding: 0 28rpx;
   display: flex;
   align-items: center;
@@ -329,9 +329,10 @@ const handleSubmit = () => {
 }
 
 .elder-input {
+  flex: 1;
   width: 100%;
   height: 100%;
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
   color: #1F2329;
 }
 
@@ -341,14 +342,14 @@ const handleSubmit = () => {
 
 .value-text {
   flex: 1;
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
   color: #1F2329;
   font-weight: 400;
 }
 
 .value-placeholder {
   color: #B0B5BD;
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
   font-weight: 400;
 }
 
@@ -359,12 +360,13 @@ const handleSubmit = () => {
   color: #9AA3AF;
 }
 
+/* 定位按钮在左：右侧留间距与分割线 */
 .loc-btn {
   display: flex;
   align-items: center;
-  margin-left: 16rpx;
-  padding-left: 20rpx;
-  border-left: 2rpx solid #E5E7EB;
+  margin-right: 16rpx;
+  padding-right: 20rpx;
+  border-right: 2rpx solid #E5E7EB;
   flex-shrink: 0;
 }
 
@@ -379,14 +381,14 @@ const handleSubmit = () => {
 }
 
 .loc-btn-text {
-  font-size: calc(28rpx * var(--font-scale));
+  font-size: calc(28rpx * var(--font-scale, 1));
   font-weight: 800;
   color: #1B65F0;
 }
 
 .placeholder-text {
   color: #B0B5BD;
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
 }
 
 .action-wrap {
@@ -395,11 +397,11 @@ const handleSubmit = () => {
 
 .submit-btn {
   width: 100%;
-  height: calc(108rpx * var(--font-scale));
-  line-height: calc(108rpx * var(--font-scale));
+  height: calc(108rpx * var(--font-scale, 1));
+  line-height: calc(108rpx * var(--font-scale, 1));
   background-color: #1B65F0;
   color: #FFFFFF;
-  font-size: calc(44rpx * var(--font-scale));
+  font-size: calc(44rpx * var(--font-scale, 1));
   font-weight: 900;
   border-radius: 32rpx;
   letter-spacing: 6rpx;
@@ -420,7 +422,7 @@ const handleSubmit = () => {
   background-color: #EBF2FF;
   border: 3rpx solid #BCD6FF;
   border-radius: 50rpx;
-  height: calc(96rpx * var(--font-scale));
+  height: calc(96rpx * var(--font-scale, 1));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -433,7 +435,7 @@ const handleSubmit = () => {
   }
 
   .voice-text {
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1B65F0;
   }

@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia';
 import type { HelpOrder, ExchangeOrder, OrderCategory } from '../types';
-import { initialOrders, initialExchangeOrders } from '../mock/seeds';
-
-const ORDERS_KEY = 'bbb_orders';
-const EXCHANGE_ORDERS_KEY = 'bbb_exchange_orders';
+import { initialOrders, initialExchangeOrders, initialHelpers } from '../mock/seeds';
+import { TABLES, getDefaultHelper } from '../utils/db';
+import { useUserStore } from './user';
 
 export const useOrderStore = defineStore('order', {
   state: () => ({
@@ -52,38 +51,19 @@ export const useOrderStore = defineStore('order', {
   actions: {
     initOrders() {
       try {
-        const cachedOrders = uni.getStorageSync(ORDERS_KEY);
-        if (Array.isArray(cachedOrders) && cachedOrders.length > 0) {
-          this.orders = cachedOrders;
-        } else {
-          this.orders = [...initialOrders];
-          this.saveOrders();
-        }
-
-        const cachedEx = uni.getStorageSync(EXCHANGE_ORDERS_KEY);
-        if (Array.isArray(cachedEx) && cachedEx.length > 0) {
-          this.exchangeOrders = cachedEx;
-        } else {
-          this.exchangeOrders = [...initialExchangeOrders];
-          this.saveExchangeOrders();
-        }
+        this.orders = TABLES.orders.all([...initialOrders]);
+        this.exchangeOrders = TABLES.exchangeOrders.all([...initialExchangeOrders]);
+        // 首次启动注入志愿者数据
+        TABLES.helpers.all([...initialHelpers]);
       } catch (e) {
         console.error('Failed to init orders', e);
       }
     },
     saveOrders() {
-      try {
-        uni.setStorageSync(ORDERS_KEY, this.orders);
-      } catch (e) {
-        console.error('Failed to save orders', e);
-      }
+      TABLES.orders.replaceAll(this.orders);
     },
     saveExchangeOrders() {
-      try {
-        uni.setStorageSync(EXCHANGE_ORDERS_KEY, this.exchangeOrders);
-      } catch (e) {
-        console.error('Failed to save exchange orders', e);
-      }
+      TABLES.exchangeOrders.replaceAll(this.exchangeOrders);
     },
     // 下单
     createOrder(params: {
@@ -96,11 +76,12 @@ export const useOrderStore = defineStore('order', {
       creatorName?: string;
       creatorAvatar?: string;
     }) {
+      const user = useUserStore().currentUser;
       const newOrder: HelpOrder = {
         id: 'ord_' + Date.now(),
-        creatorId: 'u_zhangdongmei',
-        creatorName: params.creatorName || '张冬梅',
-        creatorAvatar: params.creatorAvatar || '/static/avatars/zhangdongmei.png',
+        creatorId: user.id,
+        creatorName: params.creatorName || user.name,
+        creatorAvatar: params.creatorAvatar || user.avatar,
         category: params.category,
         title: params.title,
         content: params.content,
@@ -112,7 +93,7 @@ export const useOrderStore = defineStore('order', {
         createdAt: new Date().toLocaleString()
       };
       this.orders.unshift(newOrder);
-      this.saveOrders();
+      TABLES.orders.insert(newOrder, 'head');
       return newOrder;
     },
     // 接单
@@ -121,13 +102,7 @@ export const useOrderStore = defineStore('order', {
       if (idx !== -1) {
         this.orders[idx].status = 'in_progress';
         this.orders[idx].statusText = '已匹配到帮手';
-        this.orders[idx].helper = helperInfo || {
-          id: 'u_wuxiaoying',
-          name: '吴小应',
-          tag: '@学生',
-          avatar: '/static/avatars/malingling.png',
-          phone: '13912345678'
-        };
+        this.orders[idx].helper = helperInfo || getDefaultHelper();
         this.saveOrders();
         return this.orders[idx];
       }
@@ -155,7 +130,7 @@ export const useOrderStore = defineStore('order', {
     // 新增兑换订单
     addExchangeOrder(order: ExchangeOrder) {
       this.exchangeOrders.unshift(order);
-      this.saveExchangeOrders();
+      TABLES.exchangeOrders.insert(order, 'head');
     }
   }
 });

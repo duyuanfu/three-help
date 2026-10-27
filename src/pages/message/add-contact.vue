@@ -134,13 +134,13 @@ const handleConfirm = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -163,7 +163,7 @@ const handleConfirm = () => {
 }
 
 .field-label {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1F2329;
   margin-bottom: 16rpx;
@@ -173,7 +173,7 @@ const handleConfirm = () => {
   background-color: #FFFFFF;
   border: 3rpx solid #1B65F0;
   border-radius: 40rpx;
-  height: calc(108rpx * var(--font-scale));
+  height: calc(108rpx * var(--font-scale, 1));
   padding: 0 36rpx;
   display: flex;
   align-items: center;
@@ -181,7 +181,7 @@ const handleConfirm = () => {
 
   .elder-input {
     width: 100%;
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     font-weight: 700;
     color: #1F2329;
   }
@@ -189,7 +189,7 @@ const handleConfirm = () => {
 
 .placeholder-text {
   color: #B0B5BD;
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
 }
 
 .submit-action-wrap {
@@ -198,11 +198,11 @@ const handleConfirm = () => {
 
 .confirm-btn {
   width: 100%;
-  height: calc(112rpx * var(--font-scale));
-  line-height: calc(112rpx * var(--font-scale));
+  height: calc(112rpx * var(--font-scale, 1));
+  line-height: calc(112rpx * var(--font-scale, 1));
   background-color: #1B65F0;
   color: #FFFFFF;
-  font-size: calc(48rpx * var(--font-scale));
+  font-size: calc(48rpx * var(--font-scale, 1));
   font-weight: 900;
   border-radius: 36rpx;
   letter-spacing: 10rpx;

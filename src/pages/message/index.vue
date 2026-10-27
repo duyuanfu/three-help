@@ -10,7 +10,7 @@
 
     <!-- 搜索栏 (按姓名检索) -->
     <view class="search-box">
-      <text class="search-icon">🔍</text>
+      <image src="/static/common/search.png" mode="aspectFit" class="search-icon-img" />
       <input 
         v-model="chatStore.searchKeyword" 
         class="search-input" 
@@ -252,7 +252,7 @@ const confirmAddContact = () => {
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -262,12 +262,18 @@ const confirmAddContact = () => {
 .search-box {
   background-color: #FFFFFF;
   border-radius: 40rpx;
-  height: calc(88rpx * var(--font-scale));
+  height: calc(88rpx * var(--font-scale, 1));
   display: flex;
   align-items: center;
   padding: 0 28rpx;
   box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.05);
   margin-bottom: 30rpx;
+
+  .search-icon-img {
+    width: 38rpx;
+    height: 38rpx;
+    margin-right: 14rpx;
+  }
 
   .search-icon {
     font-size: 34rpx;
@@ -276,13 +282,13 @@ const confirmAddContact = () => {
 
   .search-input {
     flex: 1;
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     color: #1F2329;
   }
 
   .search-placeholder {
     color: #8F959E;
-    font-size: calc(30rpx * var(--font-scale));
+    font-size: calc(30rpx * var(--font-scale, 1));
   }
 }
 
@@ -305,7 +311,7 @@ const confirmAddContact = () => {
   transition: transform 0.15s;
 
   .module-btn-text {
-    font-size: calc(50rpx * var(--font-scale));
+    font-size: calc(50rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #FFFFFF;
     letter-spacing: 4rpx;
@@ -340,7 +346,7 @@ const confirmAddContact = () => {
   padding: 10rpx 0 16rpx 0;
   
   .section-title {
-    font-size: calc(36rpx * var(--font-scale));
+    font-size: calc(36rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
@@ -369,7 +375,7 @@ const confirmAddContact = () => {
   flex: 1;
 
   .session-name {
-    font-size: calc(36rpx * var(--font-scale));
+    font-size: calc(36rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
   }
@@ -377,7 +383,7 @@ const confirmAddContact = () => {
 
 .session-time-wrap {
   .session-time {
-    font-size: calc(30rpx * var(--font-scale));
+    font-size: calc(30rpx * var(--font-scale, 1));
     color: #1F2329;
     font-weight: 600;
     letter-spacing: 2rpx;
@@ -401,7 +407,7 @@ const confirmAddContact = () => {
   padding: 6rpx 32rpx;
 
   .letter-title {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
@@ -423,7 +429,7 @@ const confirmAddContact = () => {
 }
 
 .contact-name {
-  font-size: calc(36rpx * var(--font-scale));
+  font-size: calc(36rpx * var(--font-scale, 1));
   font-weight: 800;
   color: #1F2329;
 }
@@ -437,9 +443,9 @@ const confirmAddContact = () => {
   color: #1F2329;
   border: 3rpx solid #E5E7EB;
   border-radius: 40rpx;
-  height: calc(96rpx * var(--font-scale));
-  line-height: calc(96rpx * var(--font-scale));
-  font-size: calc(36rpx * var(--font-scale));
+  height: calc(96rpx * var(--font-scale, 1));
+  line-height: calc(96rpx * var(--font-scale, 1));
+  font-size: calc(36rpx * var(--font-scale, 1));
   font-weight: 900;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
 
@@ -499,7 +505,7 @@ const confirmAddContact = () => {
 .modal-title {
   display: block;
   text-align: center;
-  font-size: calc(40rpx * var(--font-scale));
+  font-size: calc(40rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   margin-bottom: 30rpx;
@@ -511,7 +517,7 @@ const confirmAddContact = () => {
 
 .modal-label {
   display: block;
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
   font-weight: 700;
   color: #1F2329;
   margin-bottom: 8rpx;
@@ -523,7 +529,7 @@ const confirmAddContact = () => {
   border-radius: 20rpx;
   height: 80rpx;
   padding: 0 20rpx;
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
 }
 
 .modal-actions {
@@ -537,7 +543,7 @@ const confirmAddContact = () => {
   height: 88rpx;
   line-height: 88rpx;
   border-radius: 24rpx;
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
   font-weight: 800;
 
   &.cancel {

@@ -29,7 +29,7 @@
 
         <view class="city-col right-align">
           <text class="city-name">{{ currentExchange?.receiverCity.split(' ')[0] || '泉州市' }}</text>
-          <text class="party-name">{{ currentExchange?.receiverCity.split(' ')[1] || '张冬梅' }}</text>
+          <text class="party-name">{{ currentExchange?.receiverCity.split(' ')[1] || userStore.currentUser.name }}</text>
         </view>
       </view>
 
@@ -97,9 +97,11 @@ import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { useOrderStore } from '../../stores/order';
 import { useSettingStore } from '../../stores/setting';
+import { useUserStore } from '../../stores/user';
 import type { ExchangeOrder } from '../../types';
 
 const orderStore = useOrderStore();
+const userStore = useUserStore();
 const settingStore = useSettingStore();
 
 const pageStyle = computed(() => ({
@@ -151,13 +153,13 @@ const goBack = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -190,7 +192,7 @@ const goBack = () => {
   }
 
   .company-name {
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
   }
@@ -208,13 +210,13 @@ const goBack = () => {
   flex-direction: column;
 
   .city-name {
-    font-size: calc(42rpx * var(--font-scale));
+    font-size: calc(42rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
 
   .party-name {
-    font-size: calc(28rpx * var(--font-scale));
+    font-size: calc(28rpx * var(--font-scale, 1));
     color: #8F959E;
     font-weight: 600;
     margin-top: 6rpx;
@@ -233,7 +235,7 @@ const goBack = () => {
 }
 
 .tracking-number-row {
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
 
   .label-text {
     color: #1F2329;
@@ -293,18 +295,18 @@ const goBack = () => {
   flex-direction: column;
 
   .node-title {
-    font-size: calc(40rpx * var(--font-scale));
+    font-size: calc(40rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
 
   .code-highlight {
-    font-size: calc(40rpx * var(--font-scale));
+    font-size: calc(40rpx * var(--font-scale, 1));
     letter-spacing: 2rpx;
   }
 
   .node-time {
-    font-size: calc(30rpx * var(--font-scale));
+    font-size: calc(30rpx * var(--font-scale, 1));
     color: #1F2329;
     font-weight: 600;
     margin-top: 10rpx;

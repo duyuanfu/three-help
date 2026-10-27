@@ -1,10 +1,8 @@
 import { defineStore } from 'pinia';
 import type { ContactItem, ChatSession, ChatMessage, MessageType } from '../types';
 import { initialContacts, initialSessions, initialChatMessages } from '../mock/seeds';
-
-const CONTACTS_KEY = 'bbb_contacts';
-const SESSIONS_KEY = 'bbb_sessions';
-const MESSAGES_KEY = 'bbb_messages';
+import { TABLES } from '../utils/db';
+import { useUserStore } from './user';
 
 export const useChatStore = defineStore('chat', {
   state: () => ({
@@ -51,51 +49,36 @@ export const useChatStore = defineStore('chat', {
   actions: {
     initChat() {
       try {
-        const cachedContacts = uni.getStorageSync(CONTACTS_KEY);
-        this.contacts = Array.isArray(cachedContacts) && cachedContacts.length > 0 
-          ? cachedContacts 
-          : [...initialContacts];
-
-        const cachedSessions = uni.getStorageSync(SESSIONS_KEY);
-        this.sessions = Array.isArray(cachedSessions) && cachedSessions.length > 0 
-          ? cachedSessions 
-          : [...initialSessions];
-
-        const cachedMessages = uni.getStorageSync(MESSAGES_KEY);
-        this.messages = cachedMessages && typeof cachedMessages === 'object' 
-          ? cachedMessages 
-          : { ...initialChatMessages };
-
-        this.saveAll();
+        this.contacts = TABLES.contacts.all([...initialContacts]);
+        this.sessions = TABLES.sessions.all([...initialSessions]);
+        this.messages = TABLES.messages.all({ ...initialChatMessages });
+        // 旧版本迁移：旧表存在但新表为空时，无需额外处理（migrateLegacyStorage 已在 initDb 完成）
       } catch (e) {
         console.error('Failed to init chat', e);
       }
     },
     saveAll() {
-      try {
-        uni.setStorageSync(CONTACTS_KEY, this.contacts);
-        uni.setStorageSync(SESSIONS_KEY, this.sessions);
-        uni.setStorageSync(MESSAGES_KEY, this.messages);
-      } catch (e) {
-        console.error('Failed to save chat data', e);
-      }
+      TABLES.contacts.replaceAll(this.contacts);
+      TABLES.sessions.replaceAll(this.sessions);
+      TABLES.messages.replaceAll(this.messages);
     },
     // 新增联系人
-    addContact(contact: { name: string; phone: string; tag?: string }) {
+    addContact(contact: { name: string; phone: string; tag?: string; avatar?: string }) {
       // 简单拼音首字母估算
       const firstChar = contact.name.trim()[0] || 'A';
       const letter = this.getFirstLetter(firstChar);
+      const currentUser = useUserStore().currentUser;
       const newContact: ContactItem = {
         id: 'c_' + Date.now(),
         name: contact.name,
-        avatar: '/static/avatars/zhangdongmei.png',
+        avatar: contact.avatar || currentUser.avatar,
         tag: contact.tag,
         letter,
         phone: contact.phone,
         isFriend: true
       };
       this.contacts.push(newContact);
-      this.saveAll();
+      TABLES.contacts.insert(newContact, 'tail');
       return newContact;
     },
     // 打开或创建私信会话
@@ -114,7 +97,8 @@ export const useChatStore = defineStore('chat', {
         if (!this.messages[newSessionId]) {
           this.messages[newSessionId] = [];
         }
-        this.saveAll();
+        TABLES.sessions.insert(session, 'head');
+        TABLES.messages.replaceAll(this.messages);
       }
       this.currentSessionId = session.sessionId;
       return session;
@@ -132,11 +116,12 @@ export const useChatStore = defineStore('chat', {
 
       const now = new Date();
       const timeStr = `${String(now.getHours()).padStart(2, '0')} : ${String(now.getMinutes()).padStart(2, '0')}`;
+      const currentUserId = useUserStore().currentUser.id;
 
       const msg: ChatMessage = {
         id: 'msg_' + Date.now(),
         sessionId: sid,
-        senderId: 'u_zhangdongmei',
+        senderId: currentUserId,
         receiverId: 'target',
         type: params.type,
         content: params.content,
@@ -191,7 +176,7 @@ export const useChatStore = defineStore('chat', {
         id: 'msg_reply_' + Date.now(),
         sessionId: sid,
         senderId: session ? session.targetUser.id : 'target',
-        receiverId: 'u_zhangdongmei',
+        receiverId: useUserStore().currentUser.id,
         type: 'text',
         content: randomReply,
         createdAt: timeStr,

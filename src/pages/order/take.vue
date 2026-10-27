@@ -113,15 +113,9 @@ const handleConfirmTake = () => {
     return;
   }
 
-  // 批量/逐一接单
+  // 批量/逐一接单（接单人统一走默认志愿者，数据来自 helpers 表）
   selectedIds.value.forEach((id) => {
-    orderStore.takeOrder(id, {
-      id: 'u_wuxiaoying',
-      name: '吴小应',
-      tag: '@学生',
-      avatar: '/static/avatars/malingling.png',
-      phone: '13912345678'
-    });
+    orderStore.takeOrder(id);
   });
 
   // 跳转接单成功
@@ -156,13 +150,13 @@ const handleConfirmTake = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -205,7 +199,7 @@ const handleConfirmTake = () => {
 }
 
 .user-name {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1F2329;
 }
@@ -237,7 +231,7 @@ const handleConfirmTake = () => {
 }
 
 .task-title {
-  font-size: calc(40rpx * var(--font-scale));
+  font-size: calc(40rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1F2329;
 }
@@ -250,7 +244,7 @@ const handleConfirmTake = () => {
 
 .detail-line {
   display: flex;
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
 }
 
 .detail-label {
@@ -276,11 +270,11 @@ const handleConfirmTake = () => {
 
 .take-action-btn {
   width: 100%;
-  height: calc(108rpx * var(--font-scale));
-  line-height: calc(108rpx * var(--font-scale));
+  height: calc(108rpx * var(--font-scale, 1));
+  line-height: calc(108rpx * var(--font-scale, 1));
   background-color: #1B65F0;
   color: #FFFFFF;
-  font-size: calc(44rpx * var(--font-scale));
+  font-size: calc(44rpx * var(--font-scale, 1));
   font-weight: 900;
   border-radius: 32rpx;
   box-shadow: 0 10rpx 28rpx rgba(27, 101, 240, 0.35);

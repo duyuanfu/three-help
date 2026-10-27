@@ -6,8 +6,12 @@ import { useOrderStore } from "./stores/order";
 import { useChatStore } from "./stores/chat";
 import { useSquareStore } from "./stores/square";
 import { useMallStore } from "./stores/mall";
+import { initDb } from "./utils/db";
 
 onLaunch(() => {
+  // 数据层引导：迁移旧版 Storage key，确保所有表可用
+  initDb();
+
   const settingStore = useSettingStore();
   settingStore.initSetting();
 

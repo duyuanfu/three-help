@@ -273,13 +273,13 @@ const sendConsultMessage = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -324,7 +324,7 @@ const sendConsultMessage = () => {
   box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.04);
 
   .welcome-text {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
     line-height: 1.6;
@@ -336,7 +336,7 @@ const sendConsultMessage = () => {
   margin-bottom: 36rpx;
 
   .tip-text {
-    font-size: calc(28rpx * var(--font-scale));
+    font-size: calc(28rpx * var(--font-scale, 1));
     color: #8F959E;
     font-weight: 600;
   }
@@ -377,7 +377,7 @@ const sendConsultMessage = () => {
   box-shadow: 0 4rpx 14rpx rgba(0, 0, 0, 0.04);
 
   .msg-text {
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     font-weight: 700;
     line-height: 1.5;
   }
@@ -399,7 +399,7 @@ const sendConsultMessage = () => {
 }
 
 .voice-msg-duration {
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
   font-weight: 800;
 }
 
@@ -485,7 +485,7 @@ const sendConsultMessage = () => {
     border-radius: 36rpx;
     height: 76rpx;
     padding: 0 24rpx;
-    font-size: calc(30rpx * var(--font-scale));
+    font-size: calc(30rpx * var(--font-scale, 1));
     color: #1F2329;
   }
 }
@@ -508,7 +508,7 @@ const sendConsultMessage = () => {
 }
 
 .voice-hold-text {
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
   font-weight: 800;
   color: #1F2329;
 }
@@ -587,7 +587,7 @@ const sendConsultMessage = () => {
 }
 
 .recording-text {
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
   font-weight: 800;
   color: #FFFFFF;
   text-align: center;
@@ -595,7 +595,7 @@ const sendConsultMessage = () => {
 
 .recording-time {
   margin-top: 8rpx;
-  font-size: calc(26rpx * var(--font-scale));
+  font-size: calc(26rpx * var(--font-scale, 1));
   color: rgba(255, 255, 255, 0.85);
 }
 

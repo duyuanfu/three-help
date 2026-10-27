@@ -255,13 +255,13 @@ const reorder = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(48rpx * var(--font-scale));
+  font-size: calc(48rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 2rpx;
@@ -318,14 +318,14 @@ const reorder = () => {
 }
 
 .status-title {
-  font-size: calc(36rpx * var(--font-scale));
+  font-size: calc(36rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1F2329;
 }
 
 .status-sub {
   margin-top: 6rpx;
-  font-size: calc(28rpx * var(--font-scale));
+  font-size: calc(28rpx * var(--font-scale, 1));
   color: #8F959E;
   font-weight: 600;
 }
@@ -348,7 +348,7 @@ const reorder = () => {
 
 .task-title {
   flex: 1;
-  font-size: calc(42rpx * var(--font-scale));
+  font-size: calc(42rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1F2329;
   line-height: 1.4;
@@ -356,7 +356,7 @@ const reorder = () => {
 
 .task-bounty {
   flex-shrink: 0;
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #FF8A00;
 }
@@ -364,7 +364,7 @@ const reorder = () => {
 .task-content {
   display: block;
   margin-top: 16rpx;
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
   color: #4E5969;
   line-height: 1.6;
 }
@@ -387,14 +387,14 @@ const reorder = () => {
 .info-label {
   width: 150rpx;
   flex-shrink: 0;
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
   color: #8F959E;
   font-weight: 600;
 }
 
 .info-value {
   flex: 1;
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
   color: #1F2329;
   font-weight: 700;
   line-height: 1.5;
@@ -402,7 +402,7 @@ const reorder = () => {
 }
 
 .info-value.small {
-  font-size: calc(28rpx * var(--font-scale));
+  font-size: calc(28rpx * var(--font-scale, 1));
   font-weight: 500;
   color: #4E5969;
 }
@@ -418,7 +418,7 @@ const reorder = () => {
 
 .section-title {
   display: block;
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1F2329;
   margin-bottom: 20rpx;
@@ -444,26 +444,26 @@ const reorder = () => {
 }
 
 .helper-name {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   font-weight: 800;
   color: #1F2329;
 }
 
 .helper-tag {
   margin-top: 6rpx;
-  font-size: calc(26rpx * var(--font-scale));
+  font-size: calc(26rpx * var(--font-scale, 1));
   color: #8F959E;
   font-weight: 600;
 }
 
 .contact-mini-btn {
   width: 140rpx;
-  height: calc(68rpx * var(--font-scale));
-  line-height: calc(68rpx * var(--font-scale));
+  height: calc(68rpx * var(--font-scale, 1));
+  line-height: calc(68rpx * var(--font-scale, 1));
   background-color: #EBF2FF;
   color: #1B65F0;
   border-radius: 34rpx;
-  font-size: calc(28rpx * var(--font-scale));
+  font-size: calc(28rpx * var(--font-scale, 1));
   font-weight: 800;
   border: none;
 
@@ -482,7 +482,7 @@ const reorder = () => {
 }
 
 .review-comment {
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
   color: #4E5969;
   line-height: 1.6;
 }
@@ -499,10 +499,10 @@ const reorder = () => {
 .secondary-btn,
 .danger-btn {
   width: 100%;
-  height: calc(104rpx * var(--font-scale));
-  line-height: calc(104rpx * var(--font-scale));
+  height: calc(104rpx * var(--font-scale, 1));
+  line-height: calc(104rpx * var(--font-scale, 1));
   border-radius: 52rpx;
-  font-size: calc(40rpx * var(--font-scale));
+  font-size: calc(40rpx * var(--font-scale, 1));
   font-weight: 900;
   border: none;
 
@@ -539,7 +539,7 @@ const reorder = () => {
 }
 
 .empty-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #8F959E;
   margin-bottom: 36rpx;
 }

@@ -224,7 +224,7 @@ const goToOrderList = () => {
   }
 
   .city-name {
-    font-size: calc(26rpx * var(--font-scale));
+    font-size: calc(26rpx * var(--font-scale, 1));
     color: #1F2329;
     font-weight: 600;
   }
@@ -240,7 +240,7 @@ const goToOrderList = () => {
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
 
   .greeting-text {
-    font-size: calc(30rpx * var(--font-scale));
+    font-size: calc(30rpx * var(--font-scale, 1));
     font-weight: 700;
     color: #1F2329;
     letter-spacing: 2rpx;
@@ -287,14 +287,14 @@ const goToOrderList = () => {
 }
 
 .hero-title {
-  font-size: calc(54rpx * var(--font-scale));
+  font-size: calc(54rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #FFFFFF;
   letter-spacing: 6rpx;
 }
 
 .hero-subtitle {
-  font-size: calc(28rpx * var(--font-scale));
+  font-size: calc(28rpx * var(--font-scale, 1));
   color: rgba(255, 255, 255, 0.9);
   margin-top: 6rpx;
   letter-spacing: 10rpx;
@@ -309,7 +309,7 @@ const goToOrderList = () => {
 
 .hero-btn {
   flex: 1;
-  height: calc(88rpx * var(--font-scale));
+  height: calc(88rpx * var(--font-scale, 1));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -317,7 +317,7 @@ const goToOrderList = () => {
   margin: 0;
   background-color: #FFFFFF;
   color: #1B65F0;
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
@@ -350,7 +350,10 @@ const goToOrderList = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12rpx 0;
+  padding: 14rpx 0;
+  margin: 0 24rpx;
+  background: #F2F7FD;
+  border-radius: 32rpx;
 }
 
 .cat-item-hover {
@@ -372,7 +375,7 @@ const goToOrderList = () => {
 }
 
 .cat-label {
-  font-size: calc(28rpx * var(--font-scale));
+  font-size: calc(28rpx * var(--font-scale, 1));
   font-weight: 800;
   color: #1F2329;
   margin-top: 8rpx;
@@ -395,7 +398,7 @@ const goToOrderList = () => {
 }
 
 .req-label {
-  font-size: calc(28rpx * var(--font-scale));
+  font-size: calc(28rpx * var(--font-scale, 1));
   color: #1F2329;
   font-weight: 600;
 }
@@ -404,7 +407,7 @@ const goToOrderList = () => {
   display: flex;
   align-items: center;
   color: #52C41A;
-  font-size: calc(26rpx * var(--font-scale));
+  font-size: calc(26rpx * var(--font-scale, 1));
   font-weight: 700;
 
   .check-icon {
@@ -419,7 +422,7 @@ const goToOrderList = () => {
 }
 
 .req-title {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1F2329;
   letter-spacing: 2rpx;
@@ -432,7 +435,7 @@ const goToOrderList = () => {
 
 .progress-btn {
   width: 100%;
-  height: calc(80rpx * var(--font-scale));
+  height: calc(80rpx * var(--font-scale, 1));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -440,7 +443,7 @@ const goToOrderList = () => {
   margin: 0;
   background-color: #EBF2FF;
   color: #1B65F0;
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
@@ -462,7 +465,7 @@ const goToOrderList = () => {
   background-color: #EBF2FF;
   border: 3rpx solid #BCD6FF;
   border-radius: 50rpx;
-  height: calc(96rpx * var(--font-scale));
+  height: calc(96rpx * var(--font-scale, 1));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -478,7 +481,7 @@ const goToOrderList = () => {
   }
 
   .voice-text {
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1B65F0;
     letter-spacing: 2rpx;

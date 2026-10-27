@@ -8,6 +8,7 @@
     "es6": true,
     "postcss": true,
     "minified": true,
+    "ignoreUploadUnusedFiles": false,
     "compileWorklet": false,
     "uglifyFileName": false,
     "uploadWithSourceMap": true,

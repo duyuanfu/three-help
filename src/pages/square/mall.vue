@@ -158,13 +158,13 @@ const handleAddToCart = (goodsId: string) => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -183,7 +183,7 @@ const handleAddToCart = (goodsId: string) => {
 
 .coin-balance-card {
   flex: 3;
-  height: calc(108rpx * var(--font-scale));
+  height: calc(108rpx * var(--font-scale, 1));
   background-color: #1B65F0;
   border-radius: 32rpx;
   display: flex;
@@ -192,7 +192,7 @@ const handleAddToCart = (goodsId: string) => {
   box-shadow: 0 6rpx 20rpx rgba(27, 101, 240, 0.3);
 
   .coin-balance-text {
-    font-size: calc(44rpx * var(--font-scale));
+    font-size: calc(44rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #FFFFFF;
     letter-spacing: 2rpx;
@@ -201,7 +201,7 @@ const handleAddToCart = (goodsId: string) => {
 
 .withdraw-card {
   flex: 2;
-  height: calc(108rpx * var(--font-scale));
+  height: calc(108rpx * var(--font-scale, 1));
   background-color: #FFC000;
   border-radius: 32rpx;
   display: flex;
@@ -210,7 +210,7 @@ const handleAddToCart = (goodsId: string) => {
   box-shadow: 0 6rpx 20rpx rgba(255, 192, 0, 0.3);
 
   .withdraw-text {
-    font-size: calc(44rpx * var(--font-scale));
+    font-size: calc(44rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #FFFFFF;
     letter-spacing: 6rpx;
@@ -231,7 +231,7 @@ const handleAddToCart = (goodsId: string) => {
   margin-bottom: 24rpx;
 
   .section-title {
-    font-size: calc(36rpx * var(--font-scale));
+    font-size: calc(36rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
@@ -298,7 +298,7 @@ const handleAddToCart = (goodsId: string) => {
   text-align: center;
 
   .goods-name-text {
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
@@ -306,11 +306,11 @@ const handleAddToCart = (goodsId: string) => {
 
 .exchange-add-btn {
   width: 100%;
-  height: calc(76rpx * var(--font-scale));
-  line-height: calc(76rpx * var(--font-scale));
+  height: calc(76rpx * var(--font-scale, 1));
+  line-height: calc(76rpx * var(--font-scale, 1));
   background-color: #EBF2FF;
   color: #1B65F0;
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   font-weight: 800;
   border-radius: 38rpx;
   border: none;
@@ -327,7 +327,7 @@ const handleAddToCart = (goodsId: string) => {
   padding: 20rpx 0 40rpx 0;
 
   .expand-text {
-    font-size: calc(30rpx * var(--font-scale));
+    font-size: calc(30rpx * var(--font-scale, 1));
     color: #1F2329;
     font-weight: 700;
     margin-bottom: 6rpx;
@@ -348,11 +348,11 @@ const handleAddToCart = (goodsId: string) => {
 
 .cart-main-btn {
   width: 100%;
-  height: calc(108rpx * var(--font-scale));
-  line-height: calc(108rpx * var(--font-scale));
+  height: calc(108rpx * var(--font-scale, 1));
+  line-height: calc(108rpx * var(--font-scale, 1));
   background-color: #1B65F0;
   color: #FFFFFF;
-  font-size: calc(44rpx * var(--font-scale));
+  font-size: calc(44rpx * var(--font-scale, 1));
   font-weight: 900;
   border-radius: 36rpx;
   letter-spacing: 8rpx;

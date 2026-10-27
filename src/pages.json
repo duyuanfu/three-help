@@ -1,24 +1,15 @@
 {
   "pages": [
     {
-      "path": "pages/common/splash",
+      "path": "pages/common/onboarding",
       "style": {
         "navigationBarTitleText": "帮帮帮",
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/common/launch-1",
-      "style": {
-        "navigationBarTitleText": "帮帮帮",
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/common/launch-2",
-      "style": {
-        "navigationBarTitleText": "帮帮帮",
-        "navigationStyle": "custom"
+        "navigationStyle": "custom",
+        "backgroundColor": "#125EF0",
+        "backgroundColorTop": "#125EF0",
+        "backgroundColorBottom": "#125EF0",
+        "backgroundTextStyle": "light",
+        "disableScroll": true
       }
     },
     {
@@ -184,6 +175,13 @@
       "path": "pages/my/feedback",
       "style": {
         "navigationBarTitleText": "意见反馈",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/my/data-manage",
+      "style": {
+        "navigationBarTitleText": "数据管理",
         "navigationStyle": "custom"
       }
     },

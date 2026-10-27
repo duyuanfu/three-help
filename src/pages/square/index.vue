@@ -68,14 +68,15 @@
               <text class="post-time">{{ post.timeAgo }}</text>
             </view>
           </view>
-          <!-- 加好友按钮 (若非本人) -->
-          <button 
-            v-if="post.authorId !== 'u_zhangdongmei'" 
-            class="add-friend-pill" 
+          <!-- 加好友按钮 (若非本人)：未添加显示【加好友】，已添加显示【已添加】 -->
+          <button
+            v-if="post.authorId !== userStore.currentUser.id"
+            class="add-friend-pill"
+            :class="{ 'friend-added': isFriend(post.authorName) }"
             hover-class="btn-hover"
-            @tap="handleAddFriend(post)"
+            @tap="isFriend(post.authorName) ? undefined : handleAddFriend(post)"
           >
-            加好友
+            {{ isFriend(post.authorName) ? '已添加' : '加好友' }}
           </button>
         </view>
 
@@ -90,11 +91,11 @@
         <!-- 底部互动操作行 (评论 / 删除 / 点赞) -->
         <view class="post-footer-row">
           <view class="comment-trigger" @tap="handleComment(post)">
-            <text class="comment-count-text">评论 {{ post.commentCount }}</text>
+            <text class="comment-count-text">评论 {{ squareStore.commentCountOf(post.id) }}</text>
           </view>
           <view class="action-right">
             <text 
-              v-if="post.authorId === 'u_zhangdongmei'" 
+              v-if="post.authorId === userStore.currentUser.id" 
               class="delete-btn-text" 
               @tap="handleDelete(post.id)"
             >
@@ -120,11 +121,13 @@ import { computed } from 'vue';
 import { useSquareStore } from '../../stores/square';
 import { useChatStore } from '../../stores/chat';
 import { useSettingStore } from '../../stores/setting';
+import { useUserStore } from '../../stores/user';
 import type { PostItem } from '../../types';
 
 const squareStore = useSquareStore();
 const chatStore = useChatStore();
 const settingStore = useSettingStore();
+const userStore = useUserStore();
 
 const pageStyle = computed(() => ({
   '--font-scale': settingStore.fontScale
@@ -150,12 +153,18 @@ const handleAddFriend = (post: PostItem) => {
   chatStore.addContact({
     name: post.authorName,
     phone: '138****' + Math.floor(1000 + Math.random() * 9000),
-    tag: post.authorTag
+    tag: post.authorTag,
+    avatar: post.authorAvatar
   });
   uni.showToast({
     title: `已成功添加 ${post.authorName} 为好友`,
     icon: 'success'
   });
+};
+
+// 是否已添加该作者为好友（以通讯录中是否存在同名联系人为准）
+const isFriend = (authorName: string) => {
+  return chatStore.contacts.some((c) => c.name === authorName);
 };
 
 const handleComment = (post: PostItem) => {
@@ -200,7 +209,7 @@ const handleDelete = (postId: string) => {
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -210,7 +219,7 @@ const handleDelete = (postId: string) => {
 .search-box {
   background-color: #FFFFFF;
   border-radius: 40rpx;
-  height: calc(88rpx * var(--font-scale));
+  height: calc(88rpx * var(--font-scale, 1));
   display: flex;
   align-items: center;
   padding: 0 28rpx;
@@ -225,13 +234,13 @@ const handleDelete = (postId: string) => {
 
   .search-input {
     flex: 1;
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     color: #1F2329;
   }
 
   .search-placeholder {
     color: #8F959E;
-    font-size: calc(30rpx * var(--font-scale));
+    font-size: calc(30rpx * var(--font-scale, 1));
   }
 }
 
@@ -240,7 +249,7 @@ const handleDelete = (postId: string) => {
   margin-bottom: 24rpx;
 
   .slogan-text {
-    font-size: calc(38rpx * var(--font-scale));
+    font-size: calc(38rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
     letter-spacing: 2rpx;
@@ -256,7 +265,7 @@ const handleDelete = (postId: string) => {
 }
 
 .banner-card {
-  height: calc(130rpx * var(--font-scale));
+  height: calc(130rpx * var(--font-scale, 1));
   border-radius: 36rpx;
   padding: 0 36rpx;
   display: flex;
@@ -279,15 +288,15 @@ const handleDelete = (postId: string) => {
 
   .banner-pill-btn {
     width: 380rpx;
-    height: calc(84rpx * var(--font-scale));
-    line-height: calc(84rpx * var(--font-scale));
+    height: calc(84rpx * var(--font-scale, 1));
+    line-height: calc(84rpx * var(--font-scale, 1));
     background-color: #FFFFFF;
     border-radius: 42rpx;
     text-align: center;
     box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
 
     .pill-btn-text {
-      font-size: calc(44rpx * var(--font-scale));
+      font-size: calc(44rpx * var(--font-scale, 1));
       font-weight: 900;
       letter-spacing: 6rpx;
     }
@@ -314,7 +323,7 @@ const handleDelete = (postId: string) => {
   margin-bottom: 20rpx;
 
   .section-title {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
@@ -358,24 +367,24 @@ const handleDelete = (postId: string) => {
   flex-direction: column;
 
   .author-name {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
 
   .post-time {
-    font-size: calc(26rpx * var(--font-scale));
+    font-size: calc(26rpx * var(--font-scale, 1));
     color: #8F959E;
     margin-top: 4rpx;
   }
 }
 
 .add-friend-pill {
-  height: calc(68rpx * var(--font-scale));
-  line-height: calc(68rpx * var(--font-scale));
+  height: calc(68rpx * var(--font-scale, 1));
+  line-height: calc(68rpx * var(--font-scale, 1));
   background-color: #EBF2FF;
   color: #1B65F0;
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
   font-weight: 800;
   border-radius: 34rpx;
   padding: 0 28rpx;
@@ -384,13 +393,18 @@ const handleDelete = (postId: string) => {
   &::after {
     border: none;
   }
+
+  &.friend-added {
+    background-color: #F1F2F5;
+    color: #8F959E;
+  }
 }
 
 .post-content-wrap {
   margin-bottom: 24rpx;
 
   .post-text {
-    font-size: calc(36rpx * var(--font-scale));
+    font-size: calc(36rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
     line-height: 1.5;
@@ -409,13 +423,13 @@ const handleDelete = (postId: string) => {
   align-items: center;
 
   .comment-count-text {
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
   }
 
   .delete-btn-text {
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
   }
@@ -430,7 +444,7 @@ const handleDelete = (postId: string) => {
     }
 
     .like-count {
-      font-size: calc(28rpx * var(--font-scale));
+      font-size: calc(28rpx * var(--font-scale, 1));
       color: #666;
       font-weight: 700;
     }

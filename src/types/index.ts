@@ -119,6 +119,15 @@ export interface PostItem {
   isLiked?: boolean;
 }
 
+// 帖子评论
+export interface CommentItem {
+  id: string;
+  postId: string;          // 关联的动态 id
+  userName: string;
+  avatar: string;
+  content: string;
+}
+
 // 积分商城商品
 export interface MallGoods {
   id: string;

@@ -31,11 +31,11 @@
           :key="msg.id" 
           :id="'msg_' + msg.id"
           class="msg-row"
-          :class="msg.senderId === 'u_zhangdongmei' ? 'msg-row-right' : 'msg-row-left'"
+          :class="msg.senderId === userStore.currentUser.id ? 'msg-row-right' : 'msg-row-left'"
         >
           <!-- 对方发的消息：头像在左 -->
           <image 
-            v-if="msg.senderId !== 'u_zhangdongmei'" 
+            v-if="msg.senderId !== userStore.currentUser.id" 
             :src="targetUser.avatar" 
             mode="aspectFill" 
             class="chat-avatar" 
@@ -81,7 +81,7 @@
 
           <!-- 我发的消息：头像在右 -->
           <image 
-            v-if="msg.senderId === 'u_zhangdongmei'" 
+            v-if="msg.senderId === userStore.currentUser.id" 
             :src="userStore.currentUser.avatar" 
             mode="aspectFill" 
             class="chat-avatar" 
@@ -240,11 +240,16 @@ const targetUser = computed(() => {
   if (currentSession.value) {
     return currentSession.value.targetUser;
   }
-  return {
-    id: 'c_li',
-    name: '李老头',
-    avatar: '/static/avatars/lilaotou.png'
-  };
+  // 兜底：从通讯录读取第一个联系人，避免硬编码
+  const first = chatStore.contacts[0];
+  if (first) {
+    return {
+      id: first.id,
+      name: first.name,
+      avatar: first.avatar
+    };
+  }
+  return { id: '', name: '', avatar: '' };
 });
 
 const messageList = computed(() => {
@@ -456,13 +461,13 @@ const goToOrderDetail = () => {
 }
 
 .back-text, .more-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   font-weight: 700;
   color: #FFFFFF;
 }
 
 .chat-title {
-  font-size: calc(44rpx * var(--font-scale));
+  font-size: calc(44rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #FFFFFF;
   letter-spacing: 2rpx;
@@ -489,7 +494,7 @@ const goToOrderDetail = () => {
 
   .order-banner-title {
     flex: 1;
-    font-size: calc(26rpx * var(--font-scale));
+    font-size: calc(26rpx * var(--font-scale, 1));
     font-weight: 700;
     color: #1F2329;
   }
@@ -547,7 +552,7 @@ const goToOrderDetail = () => {
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.04);
 
   .bubble-text {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     color: #000000;
     font-weight: 700;
     line-height: 1.5;
@@ -569,7 +574,7 @@ const goToOrderDetail = () => {
     }
 
     .media-text {
-      font-size: calc(30rpx * var(--font-scale));
+      font-size: calc(30rpx * var(--font-scale, 1));
       font-weight: 700;
     }
   }
@@ -579,14 +584,14 @@ const goToOrderDetail = () => {
     flex-direction: column;
 
     .card-title {
-      font-size: calc(30rpx * var(--font-scale));
+      font-size: calc(30rpx * var(--font-scale, 1));
       font-weight: 900;
       color: #1B65F0;
       margin-bottom: 6rpx;
     }
 
     .card-desc {
-      font-size: calc(28rpx * var(--font-scale));
+      font-size: calc(28rpx * var(--font-scale, 1));
       color: #333333;
     }
   }
@@ -613,7 +618,7 @@ const goToOrderDetail = () => {
 }
 
 .voice-bubble-duration {
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
   font-weight: 800;
   color: #1F2329;
 }
@@ -696,7 +701,7 @@ const goToOrderDetail = () => {
     border-radius: 36rpx;
     height: 76rpx;
     padding: 0 24rpx;
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     color: #1F2329;
   }
 }
@@ -719,7 +724,7 @@ const goToOrderDetail = () => {
 }
 
 .voice-hold-text {
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
   font-weight: 800;
   color: #1F2329;
 }
@@ -798,7 +803,7 @@ const goToOrderDetail = () => {
 }
 
 .recording-text {
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
   font-weight: 800;
   color: #FFFFFF;
   text-align: center;
@@ -806,7 +811,7 @@ const goToOrderDetail = () => {
 
 .recording-time {
   margin-top: 8rpx;
-  font-size: calc(26rpx * var(--font-scale));
+  font-size: calc(26rpx * var(--font-scale, 1));
   color: rgba(255, 255, 255, 0.85);
 }
 
@@ -853,7 +858,7 @@ const goToOrderDetail = () => {
 
 .drawer-label {
   margin-top: 12rpx;
-  font-size: calc(28rpx * var(--font-scale));
+  font-size: calc(28rpx * var(--font-scale, 1));
   font-weight: 800;
   color: #1F2329;
 }
@@ -884,7 +889,7 @@ const goToOrderDetail = () => {
 .send-text-btn {
   background-color: #1B65F0;
   color: #FFFFFF;
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
   font-weight: 900;
   height: 70rpx;
   line-height: 70rpx;

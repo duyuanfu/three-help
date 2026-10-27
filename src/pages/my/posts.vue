@@ -122,13 +122,13 @@ const handleDelete = (postId: string) => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -176,13 +176,13 @@ const handleDelete = (postId: string) => {
   flex-direction: column;
 
   .author-name {
-    font-size: calc(36rpx * var(--font-scale));
+    font-size: calc(36rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
 
   .post-date {
-    font-size: calc(26rpx * var(--font-scale));
+    font-size: calc(26rpx * var(--font-scale, 1));
     color: #8F959E;
     font-weight: 600;
     margin-top: 6rpx;
@@ -202,7 +202,7 @@ const handleDelete = (postId: string) => {
   }
 
   .delete-label {
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
   }
@@ -212,7 +212,7 @@ const handleDelete = (postId: string) => {
   margin-bottom: 28rpx;
 
   .post-body-text {
-    font-size: calc(38rpx * var(--font-scale));
+    font-size: calc(38rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
     line-height: 1.5;
@@ -231,7 +231,7 @@ const handleDelete = (postId: string) => {
   align-items: center;
 
   .comment-count-label {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
   }
@@ -239,7 +239,7 @@ const handleDelete = (postId: string) => {
   .view-more-pill {
     background-color: #EBF2FF;
     color: #1B65F0;
-    font-size: calc(30rpx * var(--font-scale));
+    font-size: calc(30rpx * var(--font-scale, 1));
     font-weight: 800;
     border-radius: 34rpx;
     padding: 0 32rpx;

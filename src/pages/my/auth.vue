@@ -54,7 +54,7 @@ import { useSettingStore } from '../../stores/setting';
 const userStore = useUserStore();
 const settingStore = useSettingStore();
 
-const realName = ref(userStore.currentUser.name || '张冬梅');
+const realName = ref(userStore.currentUser.name);
 const idCard = ref('35050219610815****');
 
 const pageStyle = computed(() => ({
@@ -105,13 +105,13 @@ const handleSubmitAuth = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -130,7 +130,7 @@ const handleSubmitAuth = () => {
   background-color: #FFFFFF;
   border: 3rpx solid #1B65F0;
   border-radius: 40rpx;
-  height: calc(112rpx * var(--font-scale));
+  height: calc(112rpx * var(--font-scale, 1));
   padding: 0 36rpx;
   display: flex;
   align-items: center;
@@ -139,7 +139,7 @@ const handleSubmitAuth = () => {
 
   .auth-input {
     width: 100%;
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     color: #1F2329;
     font-weight: 700;
   }
@@ -147,7 +147,7 @@ const handleSubmitAuth = () => {
 
 .placeholder-text {
   color: #B0B5BD;
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
 }
 
 .action-submit-wrap {
@@ -156,11 +156,11 @@ const handleSubmitAuth = () => {
 
 .next-step-btn {
   width: 100%;
-  height: calc(108rpx * var(--font-scale));
-  line-height: calc(108rpx * var(--font-scale));
+  height: calc(108rpx * var(--font-scale, 1));
+  line-height: calc(108rpx * var(--font-scale, 1));
   background-color: #1B65F0;
   color: #FFFFFF;
-  font-size: calc(44rpx * var(--font-scale));
+  font-size: calc(44rpx * var(--font-scale, 1));
   font-weight: 900;
   border-radius: 36rpx;
   letter-spacing: 8rpx;

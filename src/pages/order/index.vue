@@ -49,15 +49,8 @@
           @tap="goToDetail(order.id)"
         >
           <view class="card-content-layout">
-            <!-- 左侧圆圈图标/头像 -->
-            <view class="circle-avatar">
-              <image 
-                v-if="order.helper && order.helper.avatar" 
-                :src="order.helper.avatar" 
-                mode="aspectFill" 
-                class="inner-avatar" 
-              />
-            </view>
+            <!-- 左侧勾选框：勾选后订单状态变为已完成 -->
+            <view class="complete-check" hover-class="check-hover" @tap.stop="handleComplete(order)"></view>
 
             <!-- 右侧订单主体信息 -->
             <view class="card-main-info">
@@ -187,6 +180,7 @@ import { ref, computed } from 'vue';
 import { useOrderStore } from '../../stores/order';
 import { useChatStore } from '../../stores/chat';
 import { useSettingStore } from '../../stores/setting';
+import { getDefaultHelper } from '../../utils/db';
 import type { HelpOrder } from '../../types';
 
 const orderStore = useOrderStore();
@@ -212,16 +206,17 @@ const exchangeList = computed(() => {
 });
 
 const handleContact = (order: HelpOrder) => {
+  const defaultHelper = getDefaultHelper();
   const targetUser = order.helper ? {
     id: order.helper.id,
     name: order.helper.name,
     avatar: order.helper.avatar,
     tag: order.helper.tag
   } : {
-    id: 'u_wuxiaoying',
-    name: '吴小应',
-    avatar: '/static/avatars/malingling.png',
-    tag: '@学生'
+    id: defaultHelper?.id || '',
+    name: defaultHelper?.name || '志愿者',
+    avatar: defaultHelper?.avatar || '',
+    tag: defaultHelper?.tag || '@学生'
   };
 
   const session = chatStore.openOrCreateSession(targetUser);
@@ -241,6 +236,23 @@ const handleCancel = (orderId: string) => {
       if (res.confirm) {
         orderStore.cancelOrder(orderId);
         uni.showToast({ title: '已取消订单', icon: 'success' });
+      }
+    }
+  });
+};
+
+// 勾选左上角勾选框：订单状态变为已完成
+const handleComplete = (order: HelpOrder) => {
+  uni.showModal({
+    title: '完成订单',
+    content: `确认「${order.title}」服务已完成吗？`,
+    confirmText: '确认完成',
+    confirmColor: '#52C41A',
+    cancelText: '取消',
+    success: (res) => {
+      if (res.confirm) {
+        orderStore.completeOrder(order.id);
+        uni.showToast({ title: '订单已完成', icon: 'success' });
       }
     }
   });
@@ -278,7 +290,7 @@ const goToDetail = (orderId: string) => {
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -288,7 +300,7 @@ const goToDetail = (orderId: string) => {
 .search-box {
   background-color: #FFFFFF;
   border-radius: 40rpx;
-  height: calc(88rpx * var(--font-scale));
+  height: calc(88rpx * var(--font-scale, 1));
   display: flex;
   align-items: center;
   padding: 0 28rpx;
@@ -303,13 +315,13 @@ const goToDetail = (orderId: string) => {
 
   .search-input {
     flex: 1;
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     color: #1F2329;
   }
 
   .search-placeholder {
     color: #8F959E;
-    font-size: calc(30rpx * var(--font-scale));
+    font-size: calc(30rpx * var(--font-scale, 1));
   }
 }
 
@@ -322,7 +334,7 @@ const goToDetail = (orderId: string) => {
 
 .tab-btn {
   flex: 1;
-  height: calc(108rpx * var(--font-scale));
+  height: calc(108rpx * var(--font-scale, 1));
   border-radius: 36rpx;
   display: flex;
   align-items: center;
@@ -331,7 +343,7 @@ const goToDetail = (orderId: string) => {
   transition: all 0.2s;
 
   .tab-text {
-    font-size: calc(44rpx * var(--font-scale));
+    font-size: calc(44rpx * var(--font-scale, 1));
     font-weight: 900;
     letter-spacing: 4rpx;
   }
@@ -369,22 +381,19 @@ const goToDetail = (orderId: string) => {
   display: flex;
 }
 
-.circle-avatar {
+/* 左上角勾选框 (替代原头像)：空圆圈，点击确认后订单变为已完成 */
+.complete-check {
   width: 76rpx;
   height: 76rpx;
   border-radius: 50%;
-  border: 4rpx solid #E5E6EB;
+  border: 4rpx solid #D0D3D9;
   background-color: #F6F7FB;
   margin-right: 20rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  flex-shrink: 0;
+}
 
-  .inner-avatar {
-    width: 100%;
-    height: 100%;
-  }
+.check-hover {
+  opacity: 0.7;
 }
 
 .card-main-info {
@@ -397,7 +406,7 @@ const goToDetail = (orderId: string) => {
   margin-bottom: 8rpx;
 
   .info-date, .info-time {
-    font-size: calc(28rpx * var(--font-scale));
+    font-size: calc(28rpx * var(--font-scale, 1));
     color: #1F2329;
     font-weight: 700;
   }
@@ -410,13 +419,13 @@ const goToDetail = (orderId: string) => {
   margin-bottom: 12rpx;
 
   .helper-name-tag {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
   }
 
   .task-badge-title {
-    font-size: calc(40rpx * var(--font-scale));
+    font-size: calc(40rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
@@ -436,14 +445,14 @@ const goToDetail = (orderId: string) => {
   }
 
   .status-helper-name {
-    font-size: calc(28rpx * var(--font-scale));
+    font-size: calc(28rpx * var(--font-scale, 1));
     color: #52C41A;
     font-weight: 700;
     margin-right: 14rpx;
   }
 
   .status-desc-text {
-    font-size: calc(28rpx * var(--font-scale));
+    font-size: calc(28rpx * var(--font-scale, 1));
     color: #52C41A;
     font-weight: 700;
   }
@@ -456,11 +465,11 @@ const goToDetail = (orderId: string) => {
 
 .pill-action-btn {
   flex: 1;
-  height: calc(84rpx * var(--font-scale));
-  line-height: calc(84rpx * var(--font-scale));
+  height: calc(84rpx * var(--font-scale, 1));
+  line-height: calc(84rpx * var(--font-scale, 1));
   background-color: #EBF2FF;
   color: #1B65F0;
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   font-weight: 800;
   border-radius: 42rpx;
   border: none;
@@ -500,35 +509,35 @@ const goToDetail = (orderId: string) => {
   }
 
   .dark-date, .dark-time {
-    font-size: calc(28rpx * var(--font-scale));
+    font-size: calc(28rpx * var(--font-scale, 1));
     color: #1F2329;
     font-weight: 700;
   }
 
   .dark-helper {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
   }
 
   .dark-title {
-    font-size: calc(40rpx * var(--font-scale));
+    font-size: calc(40rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
 
   .bold-big {
-    font-size: calc(44rpx * var(--font-scale));
+    font-size: calc(44rpx * var(--font-scale, 1));
   }
 
   .black-contact-btn {
     margin-top: 18rpx;
     width: 100%;
-    height: calc(88rpx * var(--font-scale));
-    line-height: calc(88rpx * var(--font-scale));
+    height: calc(88rpx * var(--font-scale, 1));
+    line-height: calc(88rpx * var(--font-scale, 1));
     background-color: #000000;
     color: #FFFFFF;
-    font-size: calc(36rpx * var(--font-scale));
+    font-size: calc(36rpx * var(--font-scale, 1));
     font-weight: 800;
     border-radius: 44rpx;
     border: none;

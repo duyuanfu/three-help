@@ -97,13 +97,13 @@ const handlePublish = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -124,14 +124,14 @@ const handlePublish = () => {
 .post-textarea {
   width: 100%;
   height: 400rpx;
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1F2329;
   line-height: 1.6;
 }
 
 .placeholder-text {
   color: #B0B5BD;
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
 }
 
 .submit-action-wrap {
@@ -140,11 +140,11 @@ const handlePublish = () => {
 
 .submit-post-btn {
   width: 100%;
-  height: calc(108rpx * var(--font-scale));
-  line-height: calc(108rpx * var(--font-scale));
+  height: calc(108rpx * var(--font-scale, 1));
+  line-height: calc(108rpx * var(--font-scale, 1));
   background-color: #1B65F0;
   color: #FFFFFF;
-  font-size: calc(44rpx * var(--font-scale));
+  font-size: calc(44rpx * var(--font-scale, 1));
   font-weight: 900;
   border-radius: 32rpx;
   letter-spacing: 8rpx;
@@ -165,7 +165,7 @@ const handlePublish = () => {
   background-color: #EBF2FF;
   border: 3rpx solid #BCD6FF;
   border-radius: 50rpx;
-  height: calc(96rpx * var(--font-scale));
+  height: calc(96rpx * var(--font-scale, 1));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -178,7 +178,7 @@ const handlePublish = () => {
   }
 
   .voice-text {
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1B65F0;
   }

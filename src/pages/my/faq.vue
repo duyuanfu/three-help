@@ -61,6 +61,10 @@ const faqList = [
   {
     question: '如何联系客服 ？',
     answer: '进入帮帮帮，点首页的“线上咨询”即可联系到客服，可以发消息和打电话，人工时间：每天8:00-20:00，有紧急情况请拨打110。'
+  },
+  {
+    question: '老人不识字、看不清字，怎么用？',
+    answer: '①通过个人信息页的“字体大小”调节字体② iPhone 在“设置—辅助功能—朗读内容”开启“朗读屏幕”③ 不会打字也能按住说话，首页“按住说话”直接说出想找的功能，AI 帮您找到并读出来。'
   }
 ];
 
@@ -94,13 +98,13 @@ const goBack = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -132,7 +136,7 @@ const goBack = () => {
   }
 
   .faq-q-text {
-    font-size: calc(40rpx * var(--font-scale));
+    font-size: calc(40rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
     letter-spacing: 1rpx;
@@ -143,7 +147,7 @@ const goBack = () => {
   padding-left: 32rpx;
 
   .faq-a-text {
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     font-weight: 600;
     color: #1F2329;
     line-height: 1.6;

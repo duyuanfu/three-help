@@ -23,11 +23,14 @@
             <text class="author-time">{{ post.timeAgo }}</text>
           </view>
         </view>
-        <button v-if="!isMine" class="add-friend-pill" hover-class="btn-hover" @tap="handleAddAuthor">
+        <button v-if="!isMine && !isFriend(post.authorName)" class="add-friend-pill" hover-class="btn-hover" @tap="handleAddAuthor">
           加好友
         </button>
+        <button v-else-if="!isMine && isFriend(post.authorName)" class="add-friend-pill friend-added" disabled>
+          已添加
+        </button>
         <view v-else class="delete-post-btn" hover-class="btn-hover" @tap="handleDeletePost">
-          <text class="delete-icon">🗑</text>
+          <view class="delete-icon"></view>
           <text class="delete-text">删除</text>
         </view>
       </view>
@@ -40,11 +43,11 @@
       <!-- 卡片内部分割线 -->
       <view class="card-divider-line"></view>
 
-      <!-- 评论列表 (原型展示：张冬梅 ： 下次介绍给我，带已添加按钮) -->
+      <!-- 评论列表 (真实数据：按 postId 从评论表读取) -->
       <view class="comments-list">
-        <view 
-          v-for="(cmt, idx) in comments" 
-          :key="idx" 
+        <view
+          v-for="(cmt, idx) in commentList"
+          :key="cmt.id || idx"
           class="comment-item-row"
         >
           <image :src="cmt.avatar" mode="aspectFill" class="comment-avatar" />
@@ -53,10 +56,10 @@
               <text class="comment-user-name">{{ cmt.userName }} ：</text>
               <text class="comment-text-val">{{ cmt.content }}</text>
             </view>
-            <view class="comment-btn-wrap">
-              <button class="added-badge-btn">已添加</button>
-            </view>
           </view>
+        </view>
+        <view v-if="commentList.length === 0" class="comments-empty">
+          <text class="comments-empty-text">暂无评论，快来说两句吧</text>
         </view>
       </view>
     </view>
@@ -81,38 +84,48 @@ import { onLoad } from '@dcloudio/uni-app';
 import { useSquareStore } from '../../stores/square';
 import { useChatStore } from '../../stores/chat';
 import { useSettingStore } from '../../stores/setting';
+import { useUserStore } from '../../stores/user';
 import { showVoiceUnsupported } from '../../utils/voice';
+import type { CommentItem } from '../../types';
 
 const squareStore = useSquareStore();
 const chatStore = useChatStore();
 const settingStore = useSettingStore();
+const userStore = useUserStore();
 
 const pageStyle = computed(() => ({
   '--font-scale': settingStore.fontScale
 }));
 
+const postId = ref('');
 const post = ref({
-  authorName: '王奶奶',
-  authorAvatar: '/static/avatars/wangnainai.png',
-  timeAgo: '1分钟前',
-  content: '马玲玲那孩子脾气好又有耐心'
+  authorId: '',
+  authorName: '',
+  authorAvatar: '',
+  timeAgo: '',
+  content: ''
 });
 
-const comments = ref([
-  {
-    userName: '张冬梅',
-    avatar: '/static/avatars/zhangdongmei.png',
-    content: '下次介绍给我'
-  }
-]);
+// 真实评论数据：按 postId 从评论表读取
+const commentList = computed<CommentItem[]>(() => {
+  if (!postId.value) return [];
+  return squareStore.commentsByPost(postId.value);
+});
 
 // 当前登录用户视角：作者是本人时展示【删除】(对应评论页2)
-const isMine = computed(() => post.value.authorName === '张冬梅');
+const isMine = computed(() => post.value.authorId === userStore.currentUser.id);
+
+// 是否已添加该作者为好友
+const isFriend = (authorName: string) => {
+  return chatStore.contacts.some((c) => c.name === authorName);
+};
 
 onLoad((options) => {
   if (options && options.postId) {
+    postId.value = options.postId;
     const found = squareStore.posts.find((p) => p.id === options.postId);
     if (found) {
+      post.value.authorId = found.authorId;
       post.value.authorName = found.authorName;
       post.value.authorAvatar = found.authorAvatar;
       post.value.timeAgo = found.timeAgo;
@@ -129,7 +142,8 @@ const handleAddAuthor = () => {
   chatStore.addContact({
     name: post.value.authorName,
     phone: '138****8888',
-    tag: '@社区邻居'
+    tag: '@社区邻居',
+    avatar: post.value.authorAvatar
   });
   uni.showToast({ title: '已成功添加好友', icon: 'success' });
 };
@@ -143,6 +157,8 @@ const handleDeletePost = () => {
     cancelText: '取消',
     success: (res) => {
       if (res.confirm) {
+        // 真实删除帖子及其评论，同步广场列表与评论计数
+        squareStore.deletePost(postId.value);
         uni.showToast({ title: '已删除', icon: 'success' });
         setTimeout(() => {
           uni.navigateBack({ delta: 1 });
@@ -179,13 +195,13 @@ const handleDeletePost = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -228,23 +244,23 @@ const handleDeletePost = () => {
   flex-direction: column;
 
   .author-name {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
 
   .author-time {
-    font-size: calc(26rpx * var(--font-scale));
+    font-size: calc(26rpx * var(--font-scale, 1));
     color: #8F959E;
   }
 }
 
 .add-friend-pill {
-  height: calc(68rpx * var(--font-scale));
-  line-height: calc(68rpx * var(--font-scale));
+  height: calc(68rpx * var(--font-scale, 1));
+  line-height: calc(68rpx * var(--font-scale, 1));
   background-color: #EBF2FF;
   color: #1B65F0;
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
   font-weight: 800;
   border-radius: 34rpx;
   padding: 0 28rpx;
@@ -255,7 +271,7 @@ const handleDeletePost = () => {
   }
 }
 
-/* 本人动态的删除入口 (对应评论页2) */
+/* 本人动态的删除入口 (对应评论页2)：圆形图标与文字垂直居中 */
 .delete-post-btn {
   display: flex;
   align-items: center;
@@ -263,21 +279,43 @@ const handleDeletePost = () => {
 }
 
 .delete-icon {
-  font-size: calc(30rpx * var(--font-scale));
-  margin-right: 8rpx;
+  width: 38rpx;
+  height: 38rpx;
+  border-radius: 50%;
+  background-color: #E2E4E8;
+  margin-right: 12rpx;
+  flex-shrink: 0;
 }
 
 .delete-text {
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
   font-weight: 800;
   color: #1F2329;
+  line-height: 38rpx;
+  display: flex;
+  align-items: center;
+}
+
+.add-friend-pill.friend-added {
+  background-color: #F1F2F5;
+  color: #8F959E;
+}
+
+.comments-empty {
+  padding: 30rpx 0;
+  text-align: center;
+
+  .comments-empty-text {
+    font-size: calc(28rpx * var(--font-scale, 1));
+    color: #8F959E;
+  }
 }
 
 .post-content-wrap {
   margin-bottom: 28rpx;
 
   .post-content-text {
-    font-size: calc(38rpx * var(--font-scale));
+    font-size: calc(38rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
     line-height: 1.5;
@@ -315,36 +353,17 @@ const handleDeletePost = () => {
 }
 
 .comment-content-line {
-  margin-bottom: 12rpx;
-
   .comment-user-name {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
     margin-right: 12rpx;
   }
 
   .comment-text-val {
-    font-size: calc(34rpx * var(--font-scale));
+    font-size: calc(34rpx * var(--font-scale, 1));
     font-weight: 700;
     color: #1F2329;
-  }
-}
-
-.added-badge-btn {
-  display: inline-block;
-  background-color: #EBF2FF;
-  color: #1B65F0;
-  font-size: calc(28rpx * var(--font-scale));
-  font-weight: 800;
-  border-radius: 30rpx;
-  padding: 0 24rpx;
-  height: 56rpx;
-  line-height: 56rpx;
-  border: none;
-
-  &::after {
-    border: none;
   }
 }
 
@@ -358,7 +377,7 @@ const handleDeletePost = () => {
   background-color: #EBF2FF;
   border: 3rpx solid #BCD6FF;
   border-radius: 50rpx;
-  height: calc(96rpx * var(--font-scale));
+  height: calc(96rpx * var(--font-scale, 1));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -371,7 +390,7 @@ const handleDeletePost = () => {
   }
 
   .voice-text {
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1B65F0;
   }

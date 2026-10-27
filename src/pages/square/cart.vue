@@ -169,13 +169,13 @@ const handleExchange = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   font-weight: 700;
   color: #FFFFFF;
 }
 
 .page-title {
-  font-size: calc(48rpx * var(--font-scale));
+  font-size: calc(48rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #FFFFFF;
   letter-spacing: 4rpx;
@@ -204,7 +204,7 @@ const handleExchange = () => {
 
   .address-text {
     flex: 1;
-    font-size: calc(30rpx * var(--font-scale));
+    font-size: calc(30rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
     overflow: hidden;
@@ -215,7 +215,7 @@ const handleExchange = () => {
   .edit-addr-btn {
     background-color: #EBF2FF;
     color: #1B65F0;
-    font-size: calc(28rpx * var(--font-scale));
+    font-size: calc(28rpx * var(--font-scale, 1));
     font-weight: 800;
     border-radius: 30rpx;
     padding: 0 24rpx;
@@ -279,14 +279,14 @@ const handleExchange = () => {
   flex-direction: column;
 
   .cart-item-name {
-    font-size: calc(36rpx * var(--font-scale));
+    font-size: calc(36rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
     margin-bottom: 12rpx;
   }
 
   .cart-item-price {
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     font-weight: 700;
     color: #1F2329;
   }
@@ -294,7 +294,7 @@ const handleExchange = () => {
 
 .cart-count-col {
   .cart-count-text {
-    font-size: calc(40rpx * var(--font-scale));
+    font-size: calc(40rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
@@ -305,7 +305,7 @@ const handleExchange = () => {
   padding: 80rpx 0;
 
   .empty-text {
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     color: #8F959E;
   }
 }
@@ -324,7 +324,7 @@ const handleExchange = () => {
 
 .summary-box {
   flex: 1;
-  height: calc(110rpx * var(--font-scale));
+  height: calc(110rpx * var(--font-scale, 1));
   background-color: #FFFFFF;
   border: 4rpx solid #1B65F0;
   border-radius: 32rpx;
@@ -334,7 +334,7 @@ const handleExchange = () => {
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
 
   .summary-text {
-    font-size: calc(36rpx * var(--font-scale));
+    font-size: calc(36rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
   }
@@ -342,11 +342,11 @@ const handleExchange = () => {
 
 .confirm-exchange-btn {
   width: 100%;
-  height: calc(108rpx * var(--font-scale));
-  line-height: calc(108rpx * var(--font-scale));
+  height: calc(108rpx * var(--font-scale, 1));
+  line-height: calc(108rpx * var(--font-scale, 1));
   background-color: #1B65F0;
   color: #FFFFFF;
-  font-size: calc(44rpx * var(--font-scale));
+  font-size: calc(44rpx * var(--font-scale, 1));
   font-weight: 900;
   border-radius: 36rpx;
   letter-spacing: 6rpx;

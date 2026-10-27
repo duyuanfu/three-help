@@ -119,7 +119,7 @@ const goHome = () => {
 
 .countdown-text {
   margin-top: 0;
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   font-weight: 600;
   color: #1F2329;
   letter-spacing: 2rpx;
@@ -135,11 +135,11 @@ const goHome = () => {
 
 .action-btn {
   width: 100%;
-  height: calc(108rpx * var(--font-scale));
-  line-height: calc(108rpx * var(--font-scale));
+  height: calc(108rpx * var(--font-scale, 1));
+  line-height: calc(108rpx * var(--font-scale, 1));
   background-color: #1B65F0;
   color: #FFFFFF;
-  font-size: calc(44rpx * var(--font-scale));
+  font-size: calc(44rpx * var(--font-scale, 1));
   font-weight: 900;
   border-radius: 32rpx;
   box-shadow: 0 10rpx 28rpx rgba(27, 101, 240, 0.35);

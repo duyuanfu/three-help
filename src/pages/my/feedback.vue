@@ -107,13 +107,13 @@ const handleSubmit = () => {
 }
 
 .back-text {
-  font-size: calc(34rpx * var(--font-scale));
+  font-size: calc(34rpx * var(--font-scale, 1));
   color: #1B65F0;
   font-weight: 700;
 }
 
 .page-title {
-  font-size: calc(52rpx * var(--font-scale));
+  font-size: calc(52rpx * var(--font-scale, 1));
   font-weight: 900;
   color: #1B65F0;
   letter-spacing: 4rpx;
@@ -138,7 +138,7 @@ const handleSubmit = () => {
 .feedback-textarea {
   width: 100%;
   height: 360rpx;
-  font-size: calc(32rpx * var(--font-scale));
+  font-size: calc(32rpx * var(--font-scale, 1));
   color: #1F2329;
   line-height: 1.6;
 }
@@ -147,7 +147,7 @@ const handleSubmit = () => {
   background-color: #FFFFFF;
   border-radius: 36rpx;
   padding: 0 32rpx;
-  height: calc(100rpx * var(--font-scale));
+  height: calc(100rpx * var(--font-scale, 1));
   display: flex;
   align-items: center;
   box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.04);
@@ -156,22 +156,22 @@ const handleSubmit = () => {
 
 .contact-input {
   width: 100%;
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
   color: #1F2329;
 }
 
 .placeholder-text {
   color: #B0B5BD;
-  font-size: calc(30rpx * var(--font-scale));
+  font-size: calc(30rpx * var(--font-scale, 1));
 }
 
 .submit-btn {
   width: 100%;
-  height: calc(108rpx * var(--font-scale));
-  line-height: calc(108rpx * var(--font-scale));
+  height: calc(108rpx * var(--font-scale, 1));
+  line-height: calc(108rpx * var(--font-scale, 1));
   background-color: #1B65F0;
   color: #FFFFFF;
-  font-size: calc(44rpx * var(--font-scale));
+  font-size: calc(44rpx * var(--font-scale, 1));
   font-weight: 900;
   border-radius: 36rpx;
   letter-spacing: 6rpx;
@@ -193,7 +193,7 @@ const handleSubmit = () => {
   background-color: #EBF2FF;
   border: 3rpx solid #BCD6FF;
   border-radius: 50rpx;
-  height: calc(96rpx * var(--font-scale));
+  height: calc(96rpx * var(--font-scale, 1));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -206,7 +206,7 @@ const handleSubmit = () => {
   }
 
   .voice-text {
-    font-size: calc(32rpx * var(--font-scale));
+    font-size: calc(32rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1B65F0;
   }

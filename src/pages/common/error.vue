@@ -86,7 +86,7 @@ const handleRetry = () => {
   align-items: center;
 
   .error-main-title {
-    font-size: calc(52rpx * var(--font-scale));
+    font-size: calc(52rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #000000;
     letter-spacing: 4rpx;
@@ -94,7 +94,7 @@ const handleRetry = () => {
   }
 
   .error-sub-desc {
-    font-size: calc(36rpx * var(--font-scale));
+    font-size: calc(36rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
   }
@@ -106,11 +106,11 @@ const handleRetry = () => {
 
 .confirm-retry-btn {
   width: 100%;
-  height: calc(112rpx * var(--font-scale));
-  line-height: calc(112rpx * var(--font-scale));
+  height: calc(112rpx * var(--font-scale, 1));
+  line-height: calc(112rpx * var(--font-scale, 1));
   background-color: #1B65F0;
   color: #FFFFFF;
-  font-size: calc(48rpx * var(--font-scale));
+  font-size: calc(48rpx * var(--font-scale, 1));
   font-weight: 900;
   border-radius: 36rpx;
   letter-spacing: 12rpx;
