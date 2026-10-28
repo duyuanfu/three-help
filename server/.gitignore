@@ -1,0 +1,23 @@
+target/
+*.class
+*.log
+run.log
+cp.txt
+
+# IDEA / Eclipse
+.idea/
+*.iml
+.settings/
+.classpath
+.project
+
+# 本地调试工具（JDBC 连通性探测脚本，不入库）
+tools/
+
+# 用户上传的文件（只在本地保留，不入库）
+uploads/avatar/
+uploads/image/
+uploads/voice/
+
+# Docker 部署时的真实环境变量（含数据库密码，禁止入库）
+.env

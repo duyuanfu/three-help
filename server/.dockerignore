@@ -1,0 +1,15 @@
+# 构建上下文瘦身：这些都不该进镜像
+target/
+uploads/
+tools/
+*.log
+run.log
+cp.txt
+start.bat
+README.md
+.env
+.env.*
+.idea/
+*.iml
+.git/
+.gitignore

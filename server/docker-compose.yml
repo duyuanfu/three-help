@@ -1,0 +1,108 @@
+# =====================================================================
+# 帮帮帮后端 · Docker Compose
+#
+#   docker compose up -d --build      # 首次构建并启动
+#   docker compose logs -f            # 看日志
+#   docker compose restart            # 重启
+#   docker compose down               # 停止（数据卷保留）
+#
+# 设计要点（服务器上已有其他 Docker 服务时尤其重要）：
+#   1. 项目名固定为 bbb，不与已有 compose 项目混在一起
+#   2. 容器名、网络名、卷名全部带 bbb- 前缀，避免重名冲突
+#   3. 端口只绑 127.0.0.1，公网访问由宿主机已有的 Nginx 做 HTTPS 反代，
+#      这样既不会和其他服务抢 0.0.0.0 的端口，也不会把 8090 直接暴露出去
+#   4. 上传目录挂数据卷，重建容器不丢图片
+#   5. .env 文件里的变量优先于下面的默认值
+# =====================================================================
+
+name: bbb
+
+services:
+  bbb-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bbb-server:1.0.0
+    container_name: bbb-server
+    restart: unless-stopped
+
+    environment:
+      TZ: Asia/Shanghai
+      SERVER_PORT: "8090"
+      # 连宿主机上的 MySQL。MySQL 若是 Docker 容器，改成那个容器名并加入同一网络
+      DB_HOST: ${DB_HOST:-host.docker.internal}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-bbb}
+      DB_USER: ${DB_USER:-bbb}
+      DB_PASSWORD: ${DB_PASSWORD:-bbb123456}
+      UPLOAD_DIR: /data/uploads
+      # 和其他服务共存时内存别放太开。-Xmx 就是这个服务的硬上限，
+      # 服务器内存紧张就改成 384m，充裕可给 1g。
+      JAVA_OPTS: "-Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai"
+
+    # 让容器内能用 host.docker.internal 指向宿主机（Linux 上不加这条解析不到）
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    # 只监听回环地址：公网必须经 Nginx 走 HTTPS 进，8090 不对外
+    # 18090 是宿主机端口，被占用时改这里即可，容器内始终 8090
+    ports:
+      - "127.0.0.1:${HOST_PORT:-18090}:8090"
+
+    volumes:
+      - bbb-uploads:/data/uploads
+
+    networks:
+      - bbb-net
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8090/api/health > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # -------------------------------------------------------------------
+  # 可选：服务器上还没有 MySQL 时启用
+  #
+  #   docker compose --profile with-mysql up -d --build
+  #
+  # 同时把 .env 里的 DB_HOST 改成 bbb-mysql。
+  # 首次启动会自动执行 src/main/resources/db/init.sql（建库 + 建表 + 种子数据）。
+  # 服务器已有 MySQL 的话，这个服务不会启动，也不用管它。
+  # -------------------------------------------------------------------
+  bbb-mysql:
+    image: mysql:8.0
+    container_name: bbb-mysql
+    profiles: ["with-mysql"]
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+      - --default-time-zone=+08:00
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-this-root-password}
+      TZ: Asia/Shanghai
+    volumes:
+      - bbb-mysql-data:/var/lib/mysql
+      # 只在数据目录为空的首次启动时执行，之后改这个文件不会重放
+      - ./src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    networks:
+      - bbb-net
+
+volumes:
+  bbb-uploads:
+    name: bbb-uploads
+  bbb-mysql-data:
+    name: bbb-mysql-data
+
+networks:
+  bbb-net:
+    name: bbb-net
+    driver: bridge

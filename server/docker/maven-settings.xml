@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  可选的 Maven 镜像配置（阿里云）。
+
+  默认不用它，构建阶段直连 Maven 中央仓库。如果服务器在国内、拉依赖很慢或超时，
+  在 Dockerfile 的阶段一里取消这行注释即可启用：
+
+      COPY docker/maven-settings.xml /root/.m2/settings.xml
+
+  放在 RUN mvn ... 之前，这一层也会被缓存，不会每次构建都重新拉。
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                              https://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <mirrors>
+        <mirror>
+            <id>aliyun</id>
+            <name>Aliyun Public Repository</name>
+            <url>https://maven.aliyun.com/repository/public</url>
+            <mirrorOf>central</mirrorOf>
+        </mirror>
+    </mirrors>
+</settings>

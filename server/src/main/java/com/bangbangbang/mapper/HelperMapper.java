@@ -1,0 +1,9 @@
+package com.bangbangbang.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.bangbangbang.entity.Helper;
+import org.apache.ibatis.annotations.Mapper;
+
+@Mapper
+public interface HelperMapper extends BaseMapper<Helper> {
+}

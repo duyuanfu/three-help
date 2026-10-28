@@ -7,6 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# 依赖与构建产物（下面几条不带前导斜杠，会自动匹配 client/ 等子目录）
 node_modules
 .DS_Store
 dist
@@ -23,3 +24,8 @@ dist
 .workbuddy/
 # 头像原图备份（体积大，按需本地保留）
 assets_original_backup/
+# 后端运行产物
+server/target/
+server/uploads/avatar/
+server/uploads/image/
+server/uploads/voice/

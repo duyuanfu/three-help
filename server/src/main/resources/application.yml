@@ -1,0 +1,67 @@
+server:
+  # 8090：本机 8080 已被其他项目（performance-appraisal）占用，故改用 8090
+  # 如需更换，同步修改前端 src/api/config.ts 的 API_BASE_URL
+  #
+  # 所有 ${XXX:默认值} 都是「环境变量优先、留空则用默认值」的写法：
+  # 本地直接 mvn spring-boot:run 时行为与以前完全一致，
+  # Docker / 服务器上则通过容器环境变量注入，不需要改代码。
+  port: ${SERVER_PORT:8090}
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+
+spring:
+  application:
+    name: bbb-server
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # createDatabaseIfNotExist=true：库不存在时自动创建（需账号有建库权限）
+    # Docker 部署时用 DB_HOST / DB_PORT / DB_NAME / DB_USER / DB_PASSWORD 注入，
+    # 容器连宿主机 MySQL 用 DB_HOST=host.docker.internal，连同网络 MySQL 容器用容器名。
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/${DB_NAME:bbb}?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+    # 账号由 db/init.sql 创建；若改用 root，请确认 MySQL 中存在 'root'@'%'
+    # （WSL 转发场景下连接来源是 172.18.0.1，root@localhost 认证不到）
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: 2
+      connection-timeout: 10000
+  # 启动时自动建表 + 灌入种子数据（脚本均为幂等，可重复执行）
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+      schema-locations: classpath:db/schema.sql
+      data-locations: classpath:db/seed.sql
+      continue-on-error: false
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: Asia/Shanghai
+    deserialization:
+      # 前端会回传 helper / review / targetUser 等视图字段，实体无需全部声明，忽略即可
+      fail-on-unknown-properties: false
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+app:
+  upload:
+    # 头像、动态图片、语音文件的落盘目录（相对 server 工作目录）
+    # Docker 部署时设为绝对路径（如 /data/uploads），并挂载成卷，否则重建容器会丢图片
+    dir: ${UPLOAD_DIR:uploads}
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+    db-config:
+      id-type: input
+      table-underline: true
+
+logging:
+  level:
+    com.bangbangbang: info
