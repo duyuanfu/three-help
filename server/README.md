@@ -846,6 +846,7 @@ firewall-cmd --reload
 | 服务器上压根没有 MySQL（`ss -lntp \| grep 3306` 无输出） | 这是 `Connection refused` 最常见的原因：**3306 上没有人**。按方案 B 启用内置 `bbb-mysql` |
 | 日志一直停在 `[entrypoint] 等待数据库 ... 就绪` | 在等 MySQL，不是卡死。查 `docker compose --profile with-mysql ps`；若忘了带 `--profile`，MySQL 根本没起，永远不会就绪 |
 | `curl 127.0.0.1:18090` refused 或 `Recv failure: Connection reset by peer`，但 `bbb-mysql` 正常 | 成因相同：**应用还没监听 8090**（还在等 MySQL / Spring 启动中）。18090 的端口代理先收下连接、再被上游拒掉，所以表现为 reset。刚 `up` 完的 1~2 分钟内出现属正常，`docker compose logs -f bbb-server` 看到 `Started BangbangbangApplication` 再 curl。超过 3 分钟还不行：`ps` 看 STATUS，`logs --tail=80 bbb-server` 看卡在哪 |
+| 日志停在 `等待数据库 host.docker.internal:3306 就绪` | 用内置 MySQL 时 `.env` 里 `DB_HOST` 没改成 `bbb-mysql`——entrypoint 等的地址就是容器拿到的 `DB_HOST`，一眼定性。改完 `docker compose --profile with-mysql up -d` 重建容器（`restart` 不会更新环境变量），`docker exec bbb-server env \| grep DB_HOST` 复核 |
 | 改了 `.env` 的 `DB_HOST` 但没生效 | 环境变量在容器创建时注入，`restart` 不会更新。`docker compose --profile with-mysql up -d` 重建容器 |
 | `docker compose down` 之后 MySQL 还在跑 | 没带 `--profile`，本次命令的服务列表里没有它。补上再 down，或在 `.env` 里设 `COMPOSE_PROFILES` |
 | 日志 `Access denied for user 'bbb'@'172.x.x.x'` | 账号不存在或只允许 localhost。重跑 `init.sql`，确认存在 `'bbb'@'%'`；同时核对 `.env` 的 `DB_PASSWORD` 与脚本里的密码一致 |
