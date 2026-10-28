@@ -45,9 +45,10 @@
             <text class="cart-item-price">{{ item.goods.price }}金币</text>
           </view>
 
-          <!-- 数量 -->
+          <!-- 数量与删除 -->
           <view class="cart-count-col">
             <text class="cart-count-text">×{{ item.count }}</text>
+            <text class="cart-delete-btn" hover-class="btn-hover" @tap.stop="handleRemove(item)">删除</text>
           </view>
         </view>
       </view>
@@ -146,6 +147,22 @@ const handleExchange = () => {
       url: `/pages/square/exchange-success?orderId=${exOrder.id}`
     });
   }
+};
+
+// 删除购物车里的某件礼品（确认后移除，老年人误触容错）
+const handleRemove = (item: { goods: { id: string; name: string } }) => {
+  uni.showModal({
+    title: '删除礼品',
+    content: `确定要把「${item.goods.name}」从购物车删除吗？`,
+    confirmText: '删除',
+    confirmColor: '#E5484D',
+    success: (res) => {
+      if (res.confirm) {
+        mallStore.updateCartCount(item.goods.id, 0);
+        uni.showToast({ title: '已删除', icon: 'success' });
+      }
+    }
+  });
 };
 </script>
 
@@ -294,10 +311,24 @@ const handleExchange = () => {
 }
 
 .cart-count-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12rpx;
+
   .cart-count-text {
     font-size: calc(40rpx * var(--font-scale, 1));
     font-weight: 900;
     color: #1F2329;
+  }
+
+  .cart-delete-btn {
+    font-size: calc(28rpx * var(--font-scale, 1));
+    font-weight: 800;
+    color: #E5484D;
+    padding: 6rpx 20rpx;
+    border-radius: 24rpx;
+    background-color: #FDECEC;
   }
 }
 

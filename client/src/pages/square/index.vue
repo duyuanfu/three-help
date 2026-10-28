@@ -101,9 +101,9 @@
             >
               删除
             </text>
-            <view v-else class="like-wrap" @tap="squareStore.toggleLike(post.id)">
-              <text class="like-icon">{{ post.isLiked ? '❤️' : '🤍' }}</text>
-              <text class="like-count">{{ post.likeCount }}</text>
+            <!-- 点赞数：只展示数字，不再显示♥图案（老年用户反馈爱心图标易误解） -->
+            <view v-else class="like-wrap">
+              <text class="like-count">{{ post.likeCount }} 人点赞</text>
             </view>
           </view>
         </view>
@@ -464,11 +464,6 @@ const handleDelete = (postId: string) => {
   .like-wrap {
     display: flex;
     align-items: center;
-    gap: 8rpx;
-
-    .like-icon {
-      font-size: 32rpx;
-    }
 
     .like-count {
       font-size: calc(28rpx * var(--font-scale, 1));

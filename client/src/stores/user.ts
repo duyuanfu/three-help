@@ -173,10 +173,10 @@ export const useUserStore = defineStore('user', {
       return this.updateProfile({ points: this.currentUser.points - amount });
     },
 
-    async setRealName(realName: string, idCard: string, tag?: string) {
+    async setRealName(realName: string, tag?: string) {
       const updates: Partial<UserProfile> = { isRealName: true, name: realName };
       if (tag) updates.identityTag = tag;
-      await this.updateProfile(updates);
+      return this.updateProfile(updates);
     },
 
     switchRole(role: 'elder' | 'volunteer') {

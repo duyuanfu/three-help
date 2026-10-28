@@ -16,7 +16,7 @@
  *   request / uploadFile / downloadFile 三个合法域名。
  *   否则开发者工具勾了「不校验合法域名」时正常，真机却接口 403、图片全白。
  */
-export const API_BASE_URL = 'http://192.168.1.7:8090/api';
+export const API_BASE_URL = 'https://bbb.trythis.pw/api';
 
 /** 请求超时（毫秒） */
 export const API_TIMEOUT = 15000;

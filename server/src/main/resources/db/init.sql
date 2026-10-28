@@ -13,6 +13,13 @@
 --   3. 想彻底重置数据，先执行 reset.sql 再执行本文件
 -- =====================================================================
 
+-- ★ 必须先声明连接字符集：
+--   MySQL 容器首次初始化时在 LANG=C 环境里跑本脚本，mysql 客户端会把
+--   连接字符集自动判定为 latin1，UTF-8 的中文按 latin1 解析后全部变成
+--   双重编码乱码；而 seed 全部是 INSERT IGNORE，应用启动时用正确编码
+--   重放也无法覆盖，乱码就固化了。SET NAMES 把会话字符集强制为 utf8mb4。
+SET NAMES utf8mb4;
+
 CREATE DATABASE IF NOT EXISTS `bbb`
     DEFAULT CHARACTER SET utf8mb4
     COLLATE utf8mb4_general_ci;

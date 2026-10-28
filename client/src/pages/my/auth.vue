@@ -75,8 +75,12 @@ const handleSubmitAuth = () => {
     return;
   }
 
-  // 实名认证页不设置身份标签，下一步进入信息验证页
-  uni.navigateTo({ url: '/pages/auth/verify' });
+  // 实名认证页不设置身份标签，下一步进入信息验证页。
+  // 姓名要带给验证页：人脸通过后由 verify.vue 调 setRealName 落库，
+  // 不传的话验证页只知道"识别完成"，写不回实名状态。
+  uni.navigateTo({
+    url: `/pages/auth/verify?realName=${encodeURIComponent(realName.value.trim())}`
+  });
 };
 </script>
 

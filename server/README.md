@@ -870,6 +870,7 @@ firewall-cmd --reload
 |---|---|
 | 日志有 `Communications link failure` | 连不上 MySQL，按上面「先定位」小节处理 |
 | 服务器上压根没有 MySQL（`ss -lntp \| grep 3306` 无输出） | 这是 `Connection refused` 最常见的原因：**3306 上没有人**。按方案 B 启用内置 `bbb-mysql` |
+| 页面中文乱码（商品名、种子贴子、用户名等，**新发的内容正常**） | 旧版 `init.sql` 没有 `SET NAMES utf8mb4`：MySQL 容器首次初始化时在 LANG=C 环境里跑脚本，中文按 latin1 解析成双重编码乱码；seed 全是 `INSERT IGNORE`，应用启动时用正确编码重放也覆盖不掉。`init.sql` 已修复，**已初始化的库必须清卷重建**：`down` → `docker volume rm bbb-mysql-data` → `up -d --build`（会清空库内全部数据）。验证：`docker exec bbb-mysql mysql -ubbb -p... -e "SELECT name FROM bbb.goods;"` 应显示正常中文 |
 | 日志一直停在 `[entrypoint] 等待数据库 ... 就绪` | 在等 MySQL，不是卡死。查 `docker compose --profile with-mysql ps`；若忘了带 `--profile`，MySQL 根本没起，永远不会就绪 |
 | `curl 127.0.0.1:18090` refused 或 `Recv failure: Connection reset by peer`，但 `bbb-mysql` 正常 | 成因相同：**应用还没监听 8090**（还在等 MySQL / Spring 启动中）。18090 的端口代理先收下连接、再被上游拒掉，所以表现为 reset。刚 `up` 完的 1~2 分钟内出现属正常，`docker compose logs -f bbb-server` 看到 `Started BangbangbangApplication` 再 curl。超过 3 分钟还不行：`ps` 看 STATUS，`logs --tail=80 bbb-server` 看卡在哪 |
 | 日志停在 `等待数据库 host.docker.internal:3306 就绪` | 用内置 MySQL 时 `.env` 里 `DB_HOST` 没改成 `bbb-mysql`——entrypoint 等的地址就是容器拿到的 `DB_HOST`，一眼定性。改完 `docker compose --profile with-mysql up -d` 重建容器（`restart` 不会更新环境变量），`docker exec bbb-server env \| grep DB_HOST` 复核 |

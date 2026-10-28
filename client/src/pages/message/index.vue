@@ -97,9 +97,9 @@
           </view>
 
           <!-- 该字母下的联系人列表 -->
-          <view 
-            v-for="c in group.list" 
-            :key="c.id" 
+          <view
+            v-for="c in group.list"
+            :key="c.id"
             class="contact-row-item"
             hover-class="item-hover"
             @tap="handleContactClick(c)"
@@ -111,6 +111,8 @@
               @error="onAvatarError(c.avatar)"
             />
             <text class="contact-name">{{ c.name }}{{ c.tag || '' }}</text>
+            <!-- 删除联系人：tap.stop 避免触发行点击进会话 -->
+            <text class="contact-delete-btn" hover-class="btn-hover" @tap.stop="handleDeleteContact(c)">删除</text>
           </view>
         </view>
 
@@ -248,6 +250,28 @@ const handleContactClick = async (contact: ContactItem) => {
 const goToAddContact = () => {
   uni.navigateTo({
     url: '/pages/message/add-contact'
+  });
+};
+
+// 删除联系人：确认后调后端 DELETE /contacts/{id}，成功再从列表移除
+const handleDeleteContact = (contact: ContactItem) => {
+  uni.showModal({
+    title: '删除联系人',
+    content: `确定删除「${contact.name}」吗？删除后将无法查看与 ta 的聊天。`,
+    confirmText: '删除',
+    confirmColor: '#E5484D',
+    success: async (res) => {
+      if (!res.confirm) return;
+      uni.showLoading({ title: '删除中...', mask: true });
+      try {
+        await chatStore.removeContact(contact.id);
+        uni.hideLoading();
+        uni.showToast({ title: '已删除', icon: 'success' });
+      } catch (e: any) {
+        uni.hideLoading();
+        uni.showToast({ title: e?.message || '删除失败，请稍后重试', icon: 'none', duration: 2200 });
+      }
+    }
   });
 };
 
@@ -469,6 +493,20 @@ const confirmAddContact = () => {
   font-size: calc(36rpx * var(--font-scale, 1));
   font-weight: 800;
   color: #1F2329;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-delete-btn {
+  flex-shrink: 0;
+  font-size: calc(28rpx * var(--font-scale, 1));
+  font-weight: 800;
+  color: #E5484D;
+  padding: 8rpx 22rpx;
+  border-radius: 26rpx;
+  background-color: #FDECEC;
 }
 
 .add-contact-btn-wrap {

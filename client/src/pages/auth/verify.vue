@@ -43,12 +43,22 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { onLoad } from '@dcloudio/uni-app';
 import { useSettingStore } from '../../stores/setting';
+import { useUserStore } from '../../stores/user';
 
 const settingStore = useSettingStore();
+const userStore = useUserStore();
 
 const isScanning = ref(false);
 const isVerified = ref(false);
+
+// 实名认证页（auth.vue）带过来的真实姓名，人脸通过后写回用户资料
+const realName = ref('');
+
+onLoad((options) => {
+  realName.value = decodeURIComponent(options?.realName || userStore.currentUser.name || '');
+});
 
 const pageStyle = computed(() => ({
   '--font-scale': settingStore.fontScale
@@ -61,17 +71,22 @@ const goBack = () => {
 const handleCompleteVerify = () => {
   isScanning.value = true;
   uni.showLoading({ title: '人脸信息校验中...' });
-  setTimeout(() => {
+  setTimeout(async () => {
     uni.hideLoading();
     isScanning.value = false;
     isVerified.value = true;
 
-    // 信息验证页仅做展示，暂不写入实名认证结果
-    uni.showToast({ title: '人脸识别通过', icon: 'success' });
+    // 人脸通过 → 写回实名状态（先落库再提示，失败不提示"已实名"）
+    const saved = await userStore.setRealName(realName.value || userStore.currentUser.name);
+    if (saved) {
+      uni.showToast({ title: '实名认证通过', icon: 'success' });
+    } else {
+      uni.showToast({ title: '实名状态保存失败，请稍后重试', icon: 'none', duration: 2200 });
+    }
 
     setTimeout(() => {
       uni.navigateBack({ delta: 1 });
-    }, 700);
+    }, 900);
   }, 1000);
 };
 </script>
