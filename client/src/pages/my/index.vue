@@ -104,6 +104,10 @@
         退出登录
       </button>
     </view>
+
+    <!-- 隐藏入口：退出登录下方的空白区域，连续点击 5 次进入管理后台 -->
+    <!-- 仍然受 isAdmin 保护：非管理员点进 admin 页会被拦下并提示 -->
+    <view class="secret-entry-area" @tap="handleSecretTap"></view>
   </view>
 </template>
 
@@ -195,6 +199,32 @@ const showAddressManager = () => {
       }
     }
   });
+};
+
+// 隐藏入口：退出登录下方空白区域连续点击 5 次（2.5 秒内）进入管理后台。
+// 只是个隐蔽的门，不绕过权限：非管理员进 admin 页仍会被页面内的 isAdmin 校验拦下。
+let secretTapCount = 0;
+let secretTapTimer: ReturnType<typeof setTimeout> | null = null;
+const handleSecretTap = () => {
+  // 距上次点击超过 2.5 秒就重新计数
+  if (secretTapTimer) {
+    clearTimeout(secretTapTimer);
+    secretTapTimer = null;
+  }
+  secretTapCount += 1;
+  secretTapTimer = setTimeout(() => {
+    secretTapCount = 0;
+    secretTapTimer = null;
+  }, 2500);
+
+  if (secretTapCount >= 5) {
+    secretTapCount = 0;
+    if (secretTapTimer) {
+      clearTimeout(secretTapTimer);
+      secretTapTimer = null;
+    }
+    uni.navigateTo({ url: '/pages/admin/index' });
+  }
 };
 
 const handleLogout = () => {
@@ -431,5 +461,10 @@ const handleLogout = () => {
 
 .menu-hover, .btn-hover {
   opacity: 0.88;
+}
+
+/* 隐藏入口：退出登录按钮下方的空白区域，外观与普通留白无异 */
+.secret-entry-area {
+  height: 160rpx;
 }
 </style>
