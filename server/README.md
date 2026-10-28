@@ -563,7 +563,34 @@ docker build --build-arg APK_MIRROR=https://mirrors.tuna.tsinghua.edu.cn -t bbb-
 
 #### 5.1 宿主机 Nginx（最常见）
 
-先加 DNS 的 A 记录指向服务器 IP，然后新建 `/etc/nginx/conf.d/bbb.conf`：
+先加 DNS 的 A 记录指向服务器 IP。配置文件放哪取决于你 Nginx 的目录结构，先花十秒确认：
+
+```bash
+ls /etc/nginx/sites-enabled/ 2>/dev/null   # 有输出 → Debian/Ubuntu 结构，走路径 A
+ls /etc/nginx/conf.d/      2>/dev/null     # 有 .conf  → 通用结构，走路径 B
+```
+
+**路径 A（Debian/Ubuntu 的 `sites-available` / `sites-enabled`）**
+
+新建 `/etc/nginx/sites-available/bbb`（内容用下面那段 server 配置），然后软链启用：
+
+```bash
+sudo vim /etc/nginx/sites-available/bbb
+sudo ln -s /etc/nginx/sites-available/bbb /etc/nginx/sites-enabled/bbb
+```
+
+> 软链而不是复制：以后 `certbot --nginx` 改证书路径时改的是 sites-available 里的源文件，
+> 复制的话两边会不一致。
+>
+> 证书路径最省事的取法：打开 `sites-available` 里随便一个在用的站点，
+> 把它的 `ssl_certificate` / `ssl_certificate_key` 两行**原样抄过来**——
+> 已有泛域名证书（`*.example.com`）的话直接就能复用。
+
+**路径 B（`conf.d`）**
+
+新建 `/etc/nginx/conf.d/bbb.conf`，内容相同，不需要软链。
+
+**两种路径通用的 server 配置**（替换域名与证书路径）：
 
 ```nginx
 server {
@@ -578,8 +605,7 @@ server {
     http2 on;
     server_name api.example.com;
 
-    # 复用现有证书：路径按你服务器上的实际位置填
-    # 已有泛域名证书（*.example.com）时，这个子域名可以直接用
+    # 证书：按服务器上实际位置填（见上面的取法）
     ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;
@@ -632,7 +658,7 @@ curl -vI https://api.example.com/api/health 2>&1 | grep -E "SSL|TLS|subject|expi
 ```
 
 > 如果你用 certbot 申请新子域名证书：`sudo certbot --nginx -d api.example.com`，
-> 它会自动改这个 server 块里的证书路径，就不用手填了。
+> 它会自动定位到对应的站点文件（sites-available 里的源文件）改证书路径，就不用手填了。
 
 #### 5.2 Nginx 跑在容器里
 
