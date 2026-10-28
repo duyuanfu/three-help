@@ -101,10 +101,7 @@
             >
               删除
             </text>
-            <!-- 点赞数：只展示数字，不再显示♥图案（老年用户反馈爱心图标易误解） -->
-            <view v-else class="like-wrap">
-              <text class="like-count">{{ post.likeCount }} 人点赞</text>
-            </view>
+            <!-- 点赞数也不再展示：老年用户反馈爱心图标易误解，数字同样无感知，直接留白 -->
           </view>
         </view>
       </view>
@@ -459,17 +456,6 @@ const handleDelete = (postId: string) => {
     font-size: calc(32rpx * var(--font-scale, 1));
     font-weight: 800;
     color: #1F2329;
-  }
-
-  .like-wrap {
-    display: flex;
-    align-items: center;
-
-    .like-count {
-      font-size: calc(28rpx * var(--font-scale, 1));
-      color: #666;
-      font-weight: 700;
-    }
   }
 }
 
