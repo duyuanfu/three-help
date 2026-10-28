@@ -71,10 +71,17 @@ const handleNext = () => {
     uni.showToast({ title: '请输入您的年龄', icon: 'none' });
     return;
   }
+  // 年龄必须在合理范围：曾有用户把 11 位手机号填进年龄框，
+  // 原样传给后端会超出 Integer 范围直接报「服务异常」
+  const ageNum = parseInt(age.value);
+  if (!ageNum || ageNum < 1 || ageNum > 150) {
+    uni.showToast({ title: '请输入正确的年龄（1-150）', icon: 'none' });
+    return;
+  }
 
   // 姓名与年龄只是注册资料，随下一步一起提交给后端，暂不写库
   uni.navigateTo({
-    url: `/pages/auth/phone-reg?name=${encodeURIComponent(name.value.trim())}&age=${parseInt(age.value) || 60}`
+    url: `/pages/auth/phone-reg?name=${encodeURIComponent(name.value.trim())}&age=${ageNum}`
   });
 };
 </script>

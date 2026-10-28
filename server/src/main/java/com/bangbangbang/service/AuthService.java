@@ -65,6 +65,11 @@ public class AuthService {
         if (password == null || password.length() < 4) {
             throw BizException.of("密码至少 4 位");
         }
+        // 年龄做范围校验：Integer 存不下 11 位手机号（有用户会把手机号误填进年龄框），
+        // 不校验的话 Jackson 反序列化直接抛 out of range of int，前端只会看到「服务异常」
+        if (req.getAge() != null && (req.getAge() < 1 || req.getAge() > 150)) {
+            throw BizException.of("请输入正确的年龄（1-150）");
+        }
 
         QueryWrapper<SysUser> wrapper = new QueryWrapper<>();
         wrapper.eq("phone", phone);

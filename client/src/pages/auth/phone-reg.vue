@@ -91,7 +91,9 @@ onLoad((options) => {
     realName.value = decodeURIComponent(options.name);
   }
   if (options && options.age) {
-    realAge.value = parseInt(options.age) || 60;
+    // 兜底钳制：URL 参数可能被手工构造出离谱值，后端 Integer 也存不下超大数字
+    const parsed = parseInt(options.age) || 60;
+    realAge.value = parsed >= 1 && parsed <= 150 ? parsed : 60;
   }
 });
 
