@@ -29,8 +29,10 @@ FROM eclipse-temurin:17-jre-alpine
 
 # tzdata：容器默认 UTC，没有它 -Duser.timezone=Asia/Shanghai 不生效，
 #         上传目录的 yyyyMM 与时间字段会全部偏 8 小时
+# netcat-openbsd：entrypoint 用它探测数据库端口是否就绪
+#                 （alpine 自带的 busybox nc 不支持 -z，必须装这个）
 # uid 固定 1000：以后若把上传目录改成宿主机 bind mount，chown 1000:1000 就能对上
-RUN apk add --no-cache tzdata \
+RUN apk add --no-cache tzdata netcat-openbsd \
     && adduser -D -u 1000 bbb
 
 ENV TZ=Asia/Shanghai \
@@ -42,9 +44,13 @@ ENV TZ=Asia/Shanghai \
 WORKDIR /app
 COPY --from=build /build/app.jar /app/app.jar
 
+# 启动脚本：先等数据库端口就绪再拉起 java（MySQL 首次初始化要几十秒）
+COPY docker/entrypoint.sh /app/entrypoint.sh
+
 # 上传目录必须在镜像里先建好并给足属主，
 # 否则挂载空数据卷时 Docker 会用 root 建目录，非 root 进程写不进去。
-RUN mkdir -p /data/uploads && chown -R bbb:bbb /app /data
+RUN chmod +x /app/entrypoint.sh \
+    && mkdir -p /data/uploads && chown -R bbb:bbb /app /data
 
 USER bbb
 EXPOSE 8090
@@ -53,6 +59,8 @@ EXPOSE 8090
 HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=5 \
     CMD wget -qO- "http://127.0.0.1:${SERVER_PORT}/api/health" > /dev/null 2>&1 || exit 1
 
-# 用 sh -c 包一层，JAVA_OPTS 才能在运行时被环境变量覆盖；
-# exec 让 java 成为 PID 1，docker stop 时能正常收到 SIGTERM 优雅停机。
-ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
+# 走 entrypoint.sh：
+#   1. 先等 DB_HOST:DB_PORT 可连接（MySQL 容器首次初始化要几十秒，不等就是一屏 Communications link failure）
+#   2. 脚本里用 exec java，java 仍是 PID 1，docker stop 时能收到 SIGTERM 优雅停机
+#   3. JAVA_OPTS 在脚本内展开，运行时通过环境变量覆盖依然生效
+ENTRYPOINT ["/app/entrypoint.sh"]

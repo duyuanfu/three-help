@@ -411,18 +411,97 @@ networks:
 
 #### 方案 B：服务器还没有 MySQL
 
-compose 里已经带了 MySQL 8.0 服务，但默认不启动（`profiles: ["with-mysql"]`）。
-启用方式：
+**先确认是真的没有**（别凭印象，两条命令十秒钟）：
 
 ```bash
-# .env 里把 DB_HOST 改成 bbb-mysql
-sed -i 's/^DB_HOST=.*/DB_HOST=bbb-mysql/' .env
+ss -lntp | grep 3306                                          # 宿主机有没有进程在听 3306
+docker ps --format '{{.Names}}\t{{.Image}}' | grep -i mysql    # 有没有别的 MySQL 容器
+```
 
+两条都没输出，才是真的没有 MySQL，走下面这套。
+（只要有一条有输出，就说明其实有 MySQL，回到方案 A，别再起一个，白占内存。）
+
+compose 里已经带了 MySQL 8.0 服务，默认不启动（`profiles: ["with-mysql"]`），启用它：
+
+```bash
+cd /opt/bbb/server
+cp .env.example .env
+vim .env
+```
+
+`.env` 里这三行必须改对，**缺一个都连不上**：
+
+```ini
+DB_HOST=bbb-mysql                      # ← 关键：填容器名，不是 localhost，也不是 host.docker.internal
+MYSQL_ROOT_PASSWORD=换成你自己的强密码    # 只给内置 MySQL 的 root 用
+DB_PASSWORD=bbb123456                  # 必须和 init.sql 里创建的账号一致
+```
+
+> `DB_PASSWORD` 必须和 `src/main/resources/db/init.sql` 末尾那行对上：
+> `CREATE USER IF NOT EXISTS 'bbb'@'%' IDENTIFIED BY 'bbb123456';`
+> 改了脚本里的密码就要同步改这里，否则日志变成
+> `Access denied for user 'bbb'@'172.x.x.x'`——那是「连上了但账号不对」，和现在的 `Connection refused` 不是一回事。
+
+启动：
+
+```bash
 docker compose --profile with-mysql up -d --build
 ```
 
-首次启动时 MySQL 会自动执行挂载进去的 `init.sql`（建库 + 建表 + 种子数据）。
-注意这段初始化**只在数据目录为空时执行一次**，之后改 `init.sql` 不会重放。
+嫌每次都带 `--profile` 麻烦，可以在 `.env` 里加一行 `COMPOSE_PROFILES=with-mysql`，
+之后所有命令自动包含它。用这条验证生效（输出里**必须**有 `bbb-mysql`）：
+
+```bash
+docker compose config --services
+```
+
+> ⚠️ 不带 profile 时，compose 会**当 bbb-mysql 根本不存在**：
+> `docker compose down` 不会停它（它会一直跑着），`logs -f` 也看不到它的日志。
+> 所以要么每条命令都带 `--profile with-mysql`，要么就用 `COMPOSE_PROFILES`。
+
+**首次启动的时间线**（全程约 1~3 分钟，中途别 Ctrl+C）：
+
+| 阶段 | 在做什么 |
+|---|---|
+| 0~40s | MySQL 初始化数据目录，自动执行挂进去的 `init.sql`：建库 `bbb`、建 13 张表、灌种子数据、建账号 `bbb` |
+| 40s 起 | `bbb-server` 探测到 3306 可用，启动 Spring，`spring.sql.init` 再跑一遍幂等的建表与迁移 |
+| 60~90s | 健康检查通过，`docker compose ps` 显示 `(healthy)` |
+
+镜像里已经带了等待逻辑（`docker/entrypoint.sh`）：MySQL 没就绪时只打印
+`[entrypoint] 等待数据库 bbb-mysql:3306 就绪`，**不会再刷一屏 `Communications link failure`**。
+最多等 `DB_WAIT_TIMEOUT` 秒（默认 120，`.env` 里可调，填 0 表示不等）。
+
+**验证到底成了没**：
+
+```bash
+# 1. 两个容器都在，MySQL 状态是 healthy
+docker compose --profile with-mysql ps
+
+# 2. 表建全了（应输出 13）
+docker exec bbb-mysql mysql -uroot -p"你的root密码" -N -e \
+  "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='bbb';"
+
+# 3. 应用账号能连（不报错即通过）
+docker exec bbb-mysql mysql -ubbb -pbbb123456 -e "USE bbb; SELECT COUNT(*) FROM sys_user;"
+
+# 4. 接口通
+curl http://127.0.0.1:18090/api/health
+```
+
+**如果之前已经起过一次**：`init.sql` **只在数据目录为空时执行一次**。
+万一那次是失败的（库建了但表没建全），之后重启不会重放，需要清空卷重来：
+
+```bash
+docker compose --profile with-mysql down
+docker volume rm bbb-mysql-data        # 只删数据库卷，bbb-uploads 上传目录不受影响
+docker compose --profile with-mysql up -d --build
+```
+
+> ⚠️ 这会清空数据库里的全部数据，确认里面没有真实数据再做。
+
+**不要给 `bbb-mysql` 加 `ports` 映射**：它在 `bbb-net` 网络里，`bbb-server` 通过容器名直连即可，
+3306 不会出现在宿主机端口上，也就没有暴露到公网的风险。要手工操作数据库就
+`docker exec -it bbb-mysql mysql -uroot -p`。
 
 ### 4. 构建与启动
 
@@ -439,6 +518,7 @@ cp .env.example .env
 vim .env                 # 至少改 DB_PASSWORD，别用示例值
 
 # 3. 构建镜像并后台启动
+#    走方案 B（用内置 MySQL）的话，这里要加 --profile with-mysql
 docker compose up -d --build
 
 # 4. 看状态与日志
@@ -455,6 +535,10 @@ docker compose logs -f bbb-server
 docker compose ps                       # STATUS 应为 (healthy)
 curl http://127.0.0.1:18090/api/health  # {"code":0,...,"status":"UP"}
 ```
+
+启动顺序是：容器起来 → `docker/entrypoint.sh` 探测 `DB_HOST:DB_PORT` 直到可连接
+（MySQL 首次初始化要 30~60s，这段时间日志只有一行「等待数据库 ... 就绪」）→ 拉起 jar。
+所以看到日志停在这一行不是卡死，是在等 MySQL。
 
 国内服务器构建卡在拉依赖时可启用阿里云镜像：把 `Dockerfile` 阶段一里这行的注释去掉
 
@@ -638,12 +722,16 @@ npx uni build -p mp-weixin
 ### 8. 日常运维
 
 ```bash
+# 用内置 MySQL（方案 B）的话，下面每条命令都要带 --profile with-mysql；
+# 在 .env 里设了 COMPOSE_PROFILES=with-mysql 就不用了。
+
 # 更新代码后重新部署
 cd /opt/bbb && git pull
 cd server && docker compose up -d --build     # 只重建有变化的层
 
 # 查看日志（容器日志已限制 10MB×3，不会撑爆磁盘）
 docker compose logs -f --tail=200 bbb-server
+docker compose logs -f --tail=200 bbb-mysql
 
 # 重启 / 停止
 docker compose restart bbb-server
@@ -657,8 +745,13 @@ docker exec -it bbb-server sh
 备份（建议加进 crontab，每天一次）：
 
 ```bash
-# 数据库
+# 数据库（MySQL 在宿主机）
 mysqldump -u bbb -p'密码' --single-transaction --default-character-set=utf8mb4 bbb \
+  | gzip > /backup/bbb-$(date +%F).sql.gz
+
+# 数据库（MySQL 是 bbb-mysql 容器：mysqldump 在容器里，输出重定向在宿主机）
+docker exec bbb-mysql mysqldump -u bbb -p'密码' --single-transaction \
+  --default-character-set=utf8mb4 bbb \
   | gzip > /backup/bbb-$(date +%F).sql.gz
 
 # 上传文件（命名卷打成一个 tar）
@@ -670,10 +763,81 @@ docker run --rm -v bbb-uploads:/data -v /backup:/backup alpine \
 
 ### 9. 故障排查
 
+#### 先定位：`Communications link failure`
+
+这个报错只说明「TCP 没连上」，具体是哪一步断的要看 `Caused by` 后面那句：
+
+| `Caused by` | 含义 | 下一步 |
+|---|---|---|
+| `java.net.ConnectException: Connection refused` | 找到主机了，但 3306 没人应答 | 按下面三步查 |
+| `java.net.SocketTimeoutException: connect timed out` | 包被防火墙丢弃（不回 RST） | 查 firewalld / iptables / 云安全组 |
+| `java.net.UnknownHostException` | `DB_HOST` 这个名字根本解析不到 | 名字填错，或容器不在同一网络 |
+
+**`Connection refused` 的三步定位**（在服务器上依次执行，把输出贴出来就能定性）：
+
+```bash
+# ① 容器实际拿到的数据库配置（确认 .env 有没有生效）
+docker exec bbb-server sh -c 'env | grep -E "^(DB_|SERVER_PORT)"'
+
+# ② host.docker.internal 解析成了哪个 IP（无输出 = extra_hosts 没生效）
+docker exec bbb-server sh -c 'getent hosts host.docker.internal'
+
+# ③ 3306 到底是谁在听 —— 这一条最关键
+ss -lntp | grep 3306        # 机器上没有 ss 就用 netstat -lntp | grep 3306
+```
+
+看 ③ 的输出对号入座：
+
+| ③ 的输出 | 病因 | 修复 |
+|---|---|---|
+| `127.0.0.1:3306` | MySQL 只绑回环，容器经 `host-gateway`（172.17.0.1）访问被拒 | **改 `bind-address`**，见下方 A |
+| `0.0.0.0:3306` 或 `*:3306` | 监听没问题，是防火墙在拦 | 放行 docker0，见下方 C |
+| 一条都没有 | MySQL 根本没启动 | `systemctl start mysqld`（或起 MySQL 容器），再确认 `systemctl enable mysqld` 已设 |
+| 别的容器占用了 3306 映射 | MySQL 是容器且端口只映射给 127.0.0.1 | 走同一网络用容器名，见下方 B |
+
+**A. MySQL 装宿主机，只绑了 127.0.0.1（最常见）**
+
+```bash
+# 找出配置写在哪个文件
+grep -rn "bind-address\|skip-networking" /etc/mysql/ /etc/my.cnf /etc/my.cnf.d/ 2>/dev/null
+
+# 改成 0.0.0.0（或 docker0 的网关 172.17.0.1），有 skip-networking 就注释掉
+# 然后重启
+systemctl restart mysqld        # MariaDB 是 mariadb，Ubuntu 24.04+ 是 mysql
+
+# 复查，必须看到 0.0.0.0:3306 才说明改成功
+ss -lntp | grep 3306
+```
+
+改完务必确认 3306 **没有暴露到公网**：云平台安全组不开 3306，`ufw status` / `firewall-cmd --list-ports` 里也不要有 3306。
+
+**B. MySQL 是另一个 Docker 容器**
+
+不要走端口映射，把两边放进同一个网络用容器名直连（配置写法见第 3 节方案 A 末）。
+
+**C. 防火墙拦了 docker0 → 宿主端口**
+
+```bash
+firewall-cmd --permanent --zone=trusted --add-interface=docker0
+firewall-cmd --reload
+# 或临时验证：firewall-cmd --zone=trusted --add-interface=docker0
+```
+
+> 补充：`--profile with-mysql` 模式下 MySQL 首次启动要几十秒才建完库。
+> 新版镜像会在启动前先等端口就绪（日志是 `[entrypoint] 等待数据库 bbb-mysql:3306 就绪`），
+> 所以正常情况下不会再出现这个错。如果仍然出现，说明等的不是真正的 MySQL 地址——
+> 回到上面 ② 确认 `host.docker.internal` 解析到的 IP、③ 确认 3306 到底是谁在听。
+
+#### 其他常见问题
+
 | 现象 | 原因与处理 |
 |---|---|
-| 容器状态 `Restarting`，日志有 `Communications link failure` | 连不上 MySQL。检查 `DB_HOST`：宿主机 MySQL 用 `host.docker.internal`（compose 已加 `host-gateway`），MySQL 容器用容器名且同一网络；再确认 MySQL 的 `bind-address` 不是只绑 127.0.0.1 |
-| 日志 `Access denied for user 'bbb'@'172.x.x.x'` | 账号不存在或只允许 localhost。重跑 `init.sql`，确认存在 `'bbb'@'%'` |
+| 日志有 `Communications link failure` | 连不上 MySQL，按上面「先定位」小节处理 |
+| 服务器上压根没有 MySQL（`ss -lntp \| grep 3306` 无输出） | 这是 `Connection refused` 最常见的原因：**3306 上没有人**。按方案 B 启用内置 `bbb-mysql` |
+| 日志一直停在 `[entrypoint] 等待数据库 ... 就绪` | 在等 MySQL，不是卡死。查 `docker compose --profile with-mysql ps`；若忘了带 `--profile`，MySQL 根本没起，永远不会就绪 |
+| 改了 `.env` 的 `DB_HOST` 但没生效 | 环境变量在容器创建时注入，`restart` 不会更新。`docker compose --profile with-mysql up -d` 重建容器 |
+| `docker compose down` 之后 MySQL 还在跑 | 没带 `--profile`，本次命令的服务列表里没有它。补上再 down，或在 `.env` 里设 `COMPOSE_PROFILES` |
+| 日志 `Access denied for user 'bbb'@'172.x.x.x'` | 账号不存在或只允许 localhost。重跑 `init.sql`，确认存在 `'bbb'@'%'`；同时核对 `.env` 的 `DB_PASSWORD` 与脚本里的密码一致 |
 | 日志 `Unknown database 'bbb'` | 没执行初始化脚本；`createDatabaseIfNotExist` 需要建库权限，普通账号没有 |
 | `bind: address already in use` | 宿主机 18090 被占。`ss -lntp \| grep 18090` 查占用者，改 `.env` 的 `HOST_PORT` |
 | Nginx 502 | 容器没起或端口不匹配。先 `curl http://127.0.0.1:18090/api/health`，通了说明是 Nginx 配置问题 |

@@ -36,6 +36,9 @@ services:
       DB_USER: ${DB_USER:-bbb}
       DB_PASSWORD: ${DB_PASSWORD:-bbb123456}
       UPLOAD_DIR: /data/uploads
+      # 启动时最多等数据库多久（秒）。MySQL 首次初始化要 30~60s。
+      # 设为 0 可跳过等待直接启动。
+      DB_WAIT_TIMEOUT: ${DB_WAIT_TIMEOUT:-120}
       # 和其他服务共存时内存别放太开。-Xmx 就是这个服务的硬上限，
       # 服务器内存紧张就改成 384m，充裕可给 1g。
       JAVA_OPTS: "-Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai"
@@ -95,6 +98,23 @@ services:
       - ./src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     networks:
       - bbb-net
+
+    healthcheck:
+      # 官方镜像初始化时会先起一个 --skip-networking 的临时实例，
+      # 所以能 ping 通就意味着 init.sql 已经跑完、库表就绪。
+      # 只是给 docker ps 一个直观信号，bbb-server 靠 entrypoint 自己等端口，
+      # 不用 depends_on（避免 Compose 旧版本对 profile 服务的兼容问题）。
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   bbb-uploads:

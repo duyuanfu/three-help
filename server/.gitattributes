@@ -1,0 +1,6 @@
+# 壳脚本必须在任何平台都保持 LF：
+# CRLF 会让 #!/bin/sh 变成 #!/bin/sh\r，容器里直接报 "no such file or directory"
+*.sh text eol=lf
+
+# Windows 批处理必须保持 CRLF
+*.bat text eol=crlf
