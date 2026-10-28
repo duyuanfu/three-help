@@ -27,12 +27,19 @@ RUN mvn -B clean package -DskipTests \
 # ---------- 阶段二：运行 ----------
 FROM eclipse-temurin:17-jre-alpine
 
+# 国内服务器连 dl-cdn.alpinelinux.org 经常 TLS: unspecified error（踩过的坑：
+# community 索引拉不下来时 apk 会误报 "netcat-openbsd: no such package"）。
+# 默认换成阿里云镜像（海外构建同样可用）；特殊网络可用
+#   docker build --build-arg APK_MIRROR=https://mirrors.tuna.tsinghua.edu.cn .
+# 换其它源。
+ARG APK_MIRROR=https://mirrors.aliyun.com
 # tzdata：容器默认 UTC，没有它 -Duser.timezone=Asia/Shanghai 不生效，
 #         上传目录的 yyyyMM 与时间字段会全部偏 8 小时
 # netcat-openbsd：entrypoint 用它探测数据库端口是否就绪
 #                 （alpine 自带的 busybox nc 不支持 -z，必须装这个）
 # uid 固定 1000：以后若把上传目录改成宿主机 bind mount，chown 1000:1000 就能对上
-RUN apk add --no-cache tzdata netcat-openbsd \
+RUN sed -i "s#https://dl-cdn.alpinelinux.org#${APK_MIRROR}#g" /etc/apk/repositories \
+    && apk add --no-cache tzdata netcat-openbsd \
     && adduser -D -u 1000 bbb
 
 ENV TZ=Asia/Shanghai \

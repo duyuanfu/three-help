@@ -18,7 +18,11 @@ WAIT_TIMEOUT="${DB_WAIT_TIMEOUT:-120}"
 
 # 等待失败不终止启动：交给 Java 自己报错，
 # 再由 compose 的 restart: unless-stopped 重试，诊断信息不会被这里的循环吞掉。
-if [ "$WAIT_TIMEOUT" -gt 0 ] 2>/dev/null; then
+if ! command -v nc >/dev/null 2>&1; then
+    # 构建时 apk 装包失败会出现这种情况（入口脚本不因此卡死），
+    # 后果只是回到「Java 直接连、连不上崩、restart 拉起重试」的老行为。
+    echo "[entrypoint] 容器里没有 nc，跳过数据库等待"
+elif [ "$WAIT_TIMEOUT" -gt 0 ] 2>/dev/null; then
     echo "[entrypoint] 等待数据库 ${DB_HOST}:${DB_PORT} 就绪（最多 ${WAIT_TIMEOUT}s，DB_WAIT_TIMEOUT=0 可跳过）..."
     waited=0
     while [ "$waited" -lt "$WAIT_TIMEOUT" ]; do

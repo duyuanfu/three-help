@@ -546,6 +546,16 @@ curl http://127.0.0.1:18090/api/health  # {"code":0,...,"status":"UP"}
 COPY docker/maven-settings.xml /root/.m2/settings.xml
 ```
 
+同理，镜像第二阶段的 `apk add`（tzdata / netcat-openbsd）默认已把 Alpine 源换成阿里云镜像
+（`Dockerfile` 里的 `APK_MIRROR`）。不换的话，连 `dl-cdn.alpinelinux.org` 经常报
+`TLS: unspecified error`，community 仓库索引拉不下来时会误报
+`netcat-openbsd (no such package)`——看起来像包名错了，其实是网络问题。
+特殊网络环境换别的源：
+
+```bash
+docker build --build-arg APK_MIRROR=https://mirrors.tuna.tsinghua.edu.cn -t bbb-server:1.0.0 .
+```
+
 ### 5. 配置 Nginx HTTPS 反向代理
 
 新开一个子域名（推荐 `api.example.com`），**不要**在原来的站点里加路径前缀，
@@ -835,10 +845,10 @@ firewall-cmd --reload
 | 日志有 `Communications link failure` | 连不上 MySQL，按上面「先定位」小节处理 |
 | 服务器上压根没有 MySQL（`ss -lntp \| grep 3306` 无输出） | 这是 `Connection refused` 最常见的原因：**3306 上没有人**。按方案 B 启用内置 `bbb-mysql` |
 | 日志一直停在 `[entrypoint] 等待数据库 ... 就绪` | 在等 MySQL，不是卡死。查 `docker compose --profile with-mysql ps`；若忘了带 `--profile`，MySQL 根本没起，永远不会就绪 |
-| `curl 127.0.0.1:18090` refused，但 `bbb-mysql` 正常 | `bbb-server` 容器没在跑（退出/重启循环），或还在等待/启动阶段、8090 尚未监听（端口随容器发布，应用没起来时 curl 也是 refused）。`ps` 看 STATUS，`logs --tail=80 bbb-server` 看卡在哪 |
 | 改了 `.env` 的 `DB_HOST` 但没生效 | 环境变量在容器创建时注入，`restart` 不会更新。`docker compose --profile with-mysql up -d` 重建容器 |
 | `docker compose down` 之后 MySQL 还在跑 | 没带 `--profile`，本次命令的服务列表里没有它。补上再 down，或在 `.env` 里设 `COMPOSE_PROFILES` |
 | 日志 `Access denied for user 'bbb'@'172.x.x.x'` | 账号不存在或只允许 localhost。重跑 `init.sql`，确认存在 `'bbb'@'%'`；同时核对 `.env` 的 `DB_PASSWORD` 与脚本里的密码一致 |
+| 构建时 `apk` 报 `TLS: unspecified error` 或 `netcat-openbsd (no such package)` | 不是包名错，是连 `dl-cdn.alpinelinux.org` 拉不动索引。Dockerfile 已默认换阿里云镜像（`APK_MIRROR`）；仍失败就 `--build-arg APK_MIRROR` 换清华等其它源 |
 | 日志 `Unknown database 'bbb'` | 没执行初始化脚本；`createDatabaseIfNotExist` 需要建库权限，普通账号没有 |
 | `bind: address already in use` | 宿主机 18090 被占。`ss -lntp \| grep 18090` 查占用者，改 `.env` 的 `HOST_PORT` |
 | Nginx 502 | 容器没起或端口不匹配。先 `curl http://127.0.0.1:18090/api/health`，通了说明是 Nginx 配置问题 |
