@@ -52,6 +52,10 @@ app:
     # 头像、动态图片、语音文件的落盘目录（相对 server 工作目录）
     # Docker 部署时设为绝对路径（如 /data/uploads），并挂载成卷，否则重建容器会丢图片
     dir: ${UPLOAD_DIR:uploads}
+  map:
+    # 腾讯位置服务 WebService key（首页「自动定位」用它把经纬度反查成城市）
+    # 未配置时该接口返回提示，前端自动退回「手动选择位置」
+    tencent-key: ${TENCENT_MAP_KEY:}
 
 mybatis-plus:
   configuration:

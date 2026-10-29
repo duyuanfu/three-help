@@ -68,12 +68,31 @@
       <text>——暂无更多——</text>
     </view>
 
-    <!-- 底部语音评论条 (原型样式) -->
-    <view class="bottom-voice-bar-wrap">
-      <view class="voice-bar" hover-class="btn-hover" @tap="showVoiceUnsupported">
-        <image src="/static/common/voice-mic.png" mode="aspectFit" class="mic-img" />
-        <text class="voice-text">不方便打字？按住说话</text>
+    <!-- 底部评论输入条：文字评论 + 发送（语音仍暂未接入，保留入口提示） -->
+    <view class="bottom-comment-bar-wrap">
+      <view class="comment-input-box">
+        <input
+          v-model="draft"
+          class="comment-input"
+          placeholder="说点什么吧…"
+          placeholder-class="comment-placeholder"
+          confirm-type="send"
+          :maxlength="200"
+          :adjust-position="true"
+          @confirm="handleSendComment"
+        />
+        <view class="voice-btn" hover-class="btn-hover" @tap="showVoiceUnsupported">
+          <image src="/static/common/voice-mic.png" mode="aspectFit" class="mic-img" />
+        </view>
       </view>
+      <button
+        class="send-btn"
+        hover-class="btn-hover"
+        :disabled="sending"
+        @tap="handleSendComment"
+      >
+        发送
+      </button>
     </view>
   </view>
 </template>
@@ -143,6 +162,30 @@ onLoad((options) => {
 
 const goBack = () => {
   uni.navigateBack({ delta: 1 });
+};
+
+// ---------- 发表评论 ----------
+const draft = ref('');
+const sending = ref(false);
+
+const handleSendComment = async () => {
+  const content = draft.value.trim();
+  if (!content) {
+    uni.showToast({ title: '请输入评论内容', icon: 'none' });
+    return;
+  }
+  if (sending.value) return;
+  sending.value = true;
+  try {
+    // 真实写库：POST /api/square/{id}/comments，成功后 store 会同步评论数与广场列表
+    await squareStore.addComment(postId.value, content);
+    draft.value = '';
+    uni.showToast({ title: '评论成功', icon: 'success' });
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '评论失败，请重试', icon: 'none', duration: 2000 });
+  } finally {
+    sending.value = false;
+  }
 };
 
 const handleAddAuthor = async () => {
@@ -377,31 +420,69 @@ const handleDeletePost = () => {
 }
 
 /* 底部语音条 */
-.bottom-voice-bar-wrap {
+/* 底部评论输入条 */
+.bottom-comment-bar-wrap {
   margin-top: auto;
   margin-bottom: 30rpx;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
 }
 
-.voice-bar {
-  background-color: #EBF2FF;
+.comment-input-box {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background-color: #FFFFFF;
   border: 3rpx solid #BCD6FF;
   border-radius: 50rpx;
   height: calc(96rpx * var(--font-scale, 1));
+  padding: 0 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(27, 101, 240, 0.1);
+}
+
+.comment-input {
+  flex: 1;
+  font-size: calc(32rpx * var(--font-scale, 1));
+  color: #1F2329;
+}
+
+.comment-placeholder {
+  color: #9AA3AF;
+  font-size: calc(30rpx * var(--font-scale, 1));
+}
+
+.voice-btn {
+  width: 60rpx;
+  height: 60rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 16rpx rgba(27, 101, 240, 0.1);
 
   .mic-img {
     width: 44rpx;
     height: 44rpx;
-    margin-right: 14rpx;
+  }
+}
+
+.send-btn {
+  width: 150rpx;
+  height: calc(96rpx * var(--font-scale, 1));
+  line-height: calc(96rpx * var(--font-scale, 1));
+  background-color: #1B65F0;
+  color: #FFFFFF;
+  font-size: calc(32rpx * var(--font-scale, 1));
+  font-weight: 800;
+  border-radius: 50rpx;
+  border: none;
+  padding: 0;
+
+  &::after {
+    border: none;
   }
 
-  .voice-text {
-    font-size: calc(32rpx * var(--font-scale, 1));
-    font-weight: 800;
-    color: #1B65F0;
+  &[disabled] {
+    opacity: 0.6;
   }
 }
 

@@ -11,9 +11,9 @@
         </view>
         <view class="title-wrap">
           <image src="/static/common/brand-blue.png" mode="aspectFit" class="brand-blue-img" />
-          <view class="location-bar" @tap="changeCity">
+          <view class="location-bar" @tap="handleLocationTap">
             <image src="/static/common/location.png" mode="aspectFit" class="loc-icon-img" />
-            <text class="city-name">{{ currentCity }}</text>
+            <text class="city-name">{{ locating ? '定位中…' : currentCity }}</text>
           </view>
         </view>
       </view>
@@ -100,10 +100,12 @@
 <script setup lang="ts">
 import { netImage } from '../../utils/netImage';
 import { ref, computed } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import { useOrderStore } from '../../stores/order';
 import { useSettingStore } from '../../stores/setting';
 import { usePullRefresh } from '../../composables/usePullRefresh';
 import { showVoiceUnsupported } from '../../utils/voice';
+import { apiReverseGeocode } from '../../api/location';
 
 const orderStore = useOrderStore();
 const settingStore = useSettingStore();
@@ -130,9 +132,111 @@ const latestOrder = computed(() => {
   return orderStore.latestMyRequest;
 });
 
-const changeCity = () => {
-  currentCity.value = currentCity.value === '泉州市' ? '泉州·丰泽区' : '泉州市';
+// ---------------- 定位 ----------------
+const CITY_STORAGE_KEY = 'bbb:selected-city';
+const locating = ref(false);
+/** 本次启动是否已尝试过自动定位，避免每次切 tab 都触发一次定位 */
+let autoLocated = false;
+
+// 上次手动选择/定位成功的城市，进页面先显示它
+try {
+  const cached = uni.getStorageSync(CITY_STORAGE_KEY);
+  if (cached) currentCity.value = cached;
+} catch (e) {
+  // 读取缓存失败不影响默认值
+}
+
+const applyCity = (name: string) => {
+  const value = (name || '').trim();
+  if (!value) return;
+  currentCity.value = value;
+  try {
+    uni.setStorageSync(CITY_STORAGE_KEY, value);
+  } catch (e) {
+    // 缓存写入失败只是下次不记住，不阻断流程
+  }
 };
+
+/** 从「福建省泉州市丰泽区…」这类地址里截出城市 */
+const pickCity = (address: string) => {
+  const matched = (address || '').match(/[\u4e00-\u9fa5]{2,10}?市/);
+  return matched ? matched[0] : '';
+};
+
+/** 手动选择位置：微信原生地图选点，不需要任何地图 key */
+const manualLocate = () => {
+  uni.chooseLocation({
+    success: (res: any) => {
+      // address 是完整地址，name 是地点名；优先取城市，取不到就用地点名
+      const city = pickCity(res.address) || res.name || '';
+      if (city) {
+        applyCity(city);
+        uni.showToast({ title: `已设置位置：${city}`, icon: 'none' });
+      }
+    },
+    fail: (err: any) => {
+      // 用户主动取消不提示
+      if (err && /cancel/.test(err.errMsg || '')) return;
+      uni.showToast({ title: '未选择位置', icon: 'none' });
+    }
+  });
+};
+
+/**
+ * 自动定位：getLocation 拿经纬度 → 后端反查城市。
+ * silent=true 时失败不打扰用户（首次进页面用），只保留默认/缓存城市。
+ */
+const autoLocate = (silent = false) => {
+  if (locating.value) return;
+  locating.value = true;
+  uni.getLocation({
+    type: 'gcj02',
+    success: async (res) => {
+      try {
+        const geo = await apiReverseGeocode(res.latitude, res.longitude);
+        const city = (geo?.city || geo?.district || '').trim();
+        if (city) {
+          applyCity(city);
+          if (!silent) uni.showToast({ title: `已定位到${city}`, icon: 'none' });
+        } else if (!silent) {
+          throw new Error('未能解析出城市');
+        }
+      } catch (e) {
+        if (!silent) {
+          uni.showToast({ title: '自动定位失败，请手动选择位置', icon: 'none' });
+          manualLocate();
+        }
+      } finally {
+        locating.value = false;
+      }
+    },
+    fail: () => {
+      locating.value = false;
+      if (!silent) {
+        uni.showToast({ title: '未获得定位权限，请手动选择位置', icon: 'none' });
+        manualLocate();
+      }
+    }
+  });
+};
+
+/** 点击定位条：自动定位 / 手动选择位置 */
+const handleLocationTap = () => {
+  uni.showActionSheet({
+    itemList: ['自动定位', '手动选择位置'],
+    success: (res) => {
+      if (res.tapIndex === 0) autoLocate(false);
+      if (res.tapIndex === 1) manualLocate();
+    }
+  });
+};
+
+onShow(() => {
+  // 首次进首页静默自动定位一次；用户手动选过的城市会被缓存覆盖
+  if (autoLocated) return;
+  autoLocated = true;
+  autoLocate(true);
+});
 
 const goToCreate = (title: string, categoryId?: string) => {
   if (categoryId === 'consult' || title.includes('咨询')) {

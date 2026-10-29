@@ -56,10 +56,10 @@
         },
         "usingComponents" : true,
         "lazyCodeLoading" : "requiredComponents",
-        "requiredPrivateInfos" : [ "chooseLocation" ],
+        "requiredPrivateInfos" : [ "chooseLocation", "getLocation" ],
         "permission" : {
             "scope.userLocation" : {
-                "desc" : "用于选择上门服务地点"
+                "desc" : "用于自动定位所在城市、选择上门服务地点"
             }
         }
     },

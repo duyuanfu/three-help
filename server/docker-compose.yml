@@ -39,6 +39,9 @@ services:
       # 启动时最多等数据库多久（秒）。MySQL 首次初始化要 30~60s。
       # 设为 0 可跳过等待直接启动。
       DB_WAIT_TIMEOUT: ${DB_WAIT_TIMEOUT:-120}
+      # 腾讯位置服务 key：首页「自动定位」用它把经纬度反查城市。
+      # 不填不影响启动，自动定位会退回「手动选择位置」。
+      TENCENT_MAP_KEY: ${TENCENT_MAP_KEY:-}
       # 和其他服务共存时内存别放太开。-Xmx 就是这个服务的硬上限，
       # 服务器内存紧张就改成 384m，充裕可给 1g。
       JAVA_OPTS: "-Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai"
