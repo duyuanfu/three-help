@@ -32,6 +32,18 @@ public class AuthController {
         return ApiResult.ok(authService.login(req));
     }
 
+    /** 微信登录：小程序端 uni.login 拿到的 code 换登录态；未绑定手机号时返回 needBind=true + ticket */
+    @PostMapping("/wx-login")
+    public ApiResult<Map<String, Object>> wxLogin(@RequestBody AuthService.WxLoginRequest req) {
+        return ApiResult.ok(authService.wxLogin(req));
+    }
+
+    /** 微信登录后绑定手机号：首次即注册，老账号需校验密码 */
+    @PostMapping("/wx-bind")
+    public ApiResult<Map<String, Object>> wxBind(@RequestBody AuthService.WxBindRequest req) {
+        return ApiResult.ok(authService.wxBind(req));
+    }
+
     @PostMapping("/logout")
     public ApiResult<Void> logout(HttpServletRequest request) {
         String header = request.getHeader("Authorization");

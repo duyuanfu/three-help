@@ -66,6 +66,8 @@ public class DataMigration implements ApplicationRunner {
         addColumn("address", "owner_id", "VARCHAR(64) DEFAULT NULL COMMENT '归属用户'");
         addColumn("exchange_order", "owner_id", "VARCHAR(64) DEFAULT NULL COMMENT '归属用户'");
         addColumn("sys_user", "is_admin", "TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否管理员'");
+        addColumn("sys_user", "openid", "VARCHAR(64) DEFAULT NULL COMMENT '微信openid'");
+        addUniqueIndex("sys_user", "uk_openid", "openid");
     }
 
     private void migrateTokensTable() {
@@ -260,6 +262,30 @@ public class DataMigration implements ApplicationRunner {
         }
         jdbc.execute("ALTER TABLE `" + table + "` ADD COLUMN `" + column + "` " + definition);
         log.info("[迁移] {}.{} 已新增", table, column);
+    }
+
+    /** 幂等新增唯一索引（索引已存在时跳过） */
+    private void addUniqueIndex(String table, String indexName, String column) {
+        Integer tableExists = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",
+                Integer.class, table);
+        if (tableExists == null || tableExists == 0) {
+            return;
+        }
+        Integer count = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() " +
+                        "AND TABLE_NAME = ? AND INDEX_NAME = ?",
+                Integer.class, table, indexName);
+        if (count != null && count > 0) {
+            return;
+        }
+        try {
+            jdbc.execute("ALTER TABLE `" + table + "` ADD UNIQUE KEY `" + indexName + "` (`" + column + "`)");
+            log.info("[迁移] {}.{} 唯一索引已新增", table, indexName);
+        } catch (Exception e) {
+            // 已有重复值时建索引会失败；不影响启动，登录时按查询到的第一条兜底
+            log.warn("[迁移] {}.{} 唯一索引创建失败：{}", table, indexName, e.getMessage());
+        }
     }
 
     private String min(String a, String b) {

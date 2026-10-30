@@ -157,6 +157,8 @@ curl -X POST http://127.0.0.1:8090/api/tables/orders/ord_004 \
 |---|---|---|
 | POST | `/api/auth/register` | 注册（PBKDF2 入库，返回 token） |
 | POST | `/api/auth/login` | 登录 |
+| POST | `/api/auth/wx-login` | 微信登录（code 换 openid；未绑定时返回 `needBind` + 票据） |
+| POST | `/api/auth/wx-bind` | 微信登录后绑定手机号（未注册即注册，已注册需验密码） |
 | POST | `/api/auth/logout` | 注销令牌 |
 | GET | `/api/auth/me` | 当前用户（含 `isAdmin`） |
 | POST | `/api/upload?kind=avatar\|image\|voice` | 上传文件，返回 `/uploads/...` |
@@ -255,6 +257,8 @@ mysql -u root -p bbb < src/main/resources/db/reset.sql
 |---|---|
 | `POST /api/auth/register` | 姓名/年龄/手机号/密码 → 建账号并返回 token |
 | `POST /api/auth/login` | 手机号 + 密码 → token + 用户资料 |
+| `POST /api/auth/wx-login` | 微信 code → 已绑定则直接 token，未绑定则返回票据 |
+| `POST /api/auth/wx-bind` | 票据 + 手机号 + 密码 → 绑定并返回 token |
 | `POST /api/auth/logout` | 令牌作废 |
 | `GET /api/auth/me` | 校验当前令牌 |
 
@@ -316,8 +320,10 @@ mysql -u root -p bbb < src/main/resources/db/reset.sql
 
 ### 6. 已知未接入项（不伪造）
 
-微信/支付宝一键登录、短信验证码、语音通话、视频通话、文件发送 —— 界面上直接提示「暂未接入」，
+支付宝一键登录、短信验证码、语音通话、视频通话、文件发送 —— 界面上直接提示「暂未接入」，
 不再用假数据模拟成功。
+
+微信登录已接入（openid 登录 + 绑定手机号），配置与限制见第十一节 12 小节。
 
 ---
 
@@ -956,3 +962,82 @@ firewall-cmd --reload
 - [ ] MySQL 端口不要对公网开放，只允许本机或 Docker 内网访问
 - [ ] 确认 `https://api.example.com/api/health` 从外网可访问，`http://` 会 301 跳到 443
 - [ ] 备份任务已加进 crontab，并**实际恢复过一次**（没验证过的备份不算备份）
+- [ ] **`WX_SECRET` 只存在于服务器 `.env`**：连同 `.env` 一起 `chmod 600`，不要提交、不要下发前端
+
+### 12. 微信登录（openid 登录 + 绑定手机号）
+
+个人主体的小程序**不能**用「手机号快捷登录」（`getPhoneNumber` 要求已认证的非个人主体），
+所以这里的方案是：**微信授权拿到 openid → 再手动绑定手机号**，一次绑定之后即可微信一键登录。
+
+#### 12.1 服务端配置
+
+`.env` 里加两行（`WX_APPID` 与 `client/src/manifest.json` 的 `mp-weixin.appid` 必须一致）：
+
+```ini
+WX_APPID=wx390f4498c4e0d317
+WX_SECRET=你的AppSecret
+```
+
+```bash
+docker compose up -d --build
+docker exec bbb-server env | grep WX_          # 两行都有输出才算注入成功
+```
+
+AppSecret 只在服务端使用，用于调 `jscode2session` 换 openid；**绝不能写进小程序代码**——
+小程序包可以被解出来，Secret 一旦泄露，别人能用你的小程序身份换 openid。
+
+#### 12.2 登录流程
+
+```
+小程序 uni.login → code
+      ↓ POST /api/auth/wx-login
+服务端 jscode2session（AppID + Secret + code）→ openid
+      ↓
+   openid 已绑定账号 ──── 是 ──→ 直接签发令牌，进首页
+      ↓ 否
+返回 needBind=true + 一次性票据（5 分钟、单次使用）
+      ↓ 跳 pages/auth/wx-bind
+用户填手机号 + 密码
+      ↓ POST /api/auth/wx-bind
+手机号未注册 → 直接创建账号并绑定（姓名必填）
+手机号已注册 → 校验原密码后绑定（密码不对则拒绝，防止账号被他人绑定）
+      ↓
+签发令牌
+```
+
+设计要点：
+
+- **不把 openid 返回给前端**。否则任何人填一个 openid 就能把别人的账号绑到自己微信上。
+  票据是随机串、5 分钟有效、绑定成功即销毁。
+- 数据库 `sys_user.openid` 为 `VARCHAR(64) DEFAULT NULL` + 唯一索引。允许 NULL 是关键——
+  唯一索引下 MySQL 允许多个 NULL，未绑定微信的老用户不会互相冲突。
+- 该字段列上有 `@JsonIgnore`，任何接口都不会把 openid 下发。
+
+#### 12.3 表结构变更
+
+`init.sql` / `schema.sql` 已包含 `openid` 字段与 `uk_openid` 唯一索引。
+**已经在运行的库不用手工改**：`DataMigration` 每次启动会幂等地补列、补索引。
+
+#### 12.4 联调与排错
+
+微信侧接口的常见错误码（都已转成中文提示）：
+
+| 现象 | 原因 |
+|---|---|
+| 「服务端尚未配置微信登录」 | `.env` 没填 `WX_APPID` / `WX_SECRET`，或改了 `.env` 没 `up -d` 重建容器 |
+| 「微信授权码无效」（40029） | `manifest.json` 的 appid 与服务端 `WX_APPID` 不一致，或 code 已过期（5 分钟） |
+| 「服务端 AppSecret 配置有误」（40125） | Secret 复制错了，或已在公众平台重置 |
+| 「微信授权已过期」（绑定页） | 票据超 5 分钟，或服务重启过。重新点一次微信登录 |
+| 「该手机号已绑定其它微信」 | 该账号已绑过别的 openid。先用手机号密码登录 |
+| 「手机号或密码不正确」 | 绑定已有账号时密码填错。这是刻意设计，防止他人用手机号抢绑 |
+
+> 微信支付的 AppSecret 与小程序是同一套，但 `jscode2session` 不需要 IP 白名单，只要
+> 公众平台「开发管理 → 开发设置」里的 AppID/Secret 正确即可，服务器出口 IP 不用备案。
+
+#### 12.5 个人主体必须知道的两件事
+
+1. **不能做「一键获取手机号」**：`<button open-type="getPhoneNumber">` 在个人主体下会直接失败，
+   所以本方案让用户手输手机号。将来若主体升级为企业/个体工商户，可以把这个页面替换成
+   `getPhoneNumber` + `phonenumber.getPhoneNumber` 接口，体验会更快。
+2. **账号与微信的绑定关系是「一个手机号 = 一个账号 = 一个微信」**：想让一个账号换绑微信，
+   目前需要管理员直接改库（`UPDATE sys_user SET openid = NULL WHERE phone = 'xxx';` 后重新绑定）。

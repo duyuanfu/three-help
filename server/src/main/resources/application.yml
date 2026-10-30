@@ -56,6 +56,11 @@ app:
     # 腾讯位置服务 WebService key（首页「自动定位」用它把经纬度反查成城市）
     # 未配置时该接口返回提示，前端自动退回「手动选择位置」
     tencent-key: ${TENCENT_MAP_KEY:}
+  wx:
+    # 微信小程序登录。AppID 是公开信息，AppSecret 绝不能进代码仓库，
+    # 服务器上通过 .env 的 WX_APPID / WX_SECRET 注入（Docker 部署）
+    appid: ${WX_APPID:}
+    secret: ${WX_SECRET:}
 
 mybatis-plus:
   configuration:

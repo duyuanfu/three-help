@@ -2,8 +2,8 @@ import { defineStore } from 'pinia';
 import type { UserProfile } from '../types';
 import { TABLES } from '../utils/db';
 import { getToken, setToken, clearToken, setCachedUserId, resolveAssetUrl } from '../utils/token';
-import { apiLogin, apiRegister, apiLogout, apiMe, apiUpdateProfile } from '../api/auth';
-import type { RegisterPayload } from '../api/auth';
+import { apiLogin, apiRegister, apiLogout, apiMe, apiUpdateProfile, apiWxLogin, apiWxBind } from '../api/auth';
+import type { RegisterPayload, WxBindPayload } from '../api/auth';
 
 /** 未登录时的空资料，保证页面不会因为字段缺失而报错 */
 const emptyUser = (): UserProfile => ({
@@ -34,6 +34,19 @@ export const useUserStore = defineStore('user', {
     displayName: (state) => state.currentUser.name || '未登录'
   },
   actions: {
+    /** 拿到令牌后统一落本地：令牌 + 用户资料 + 角色，登录/注册/微信登录共用 */
+    applyAuthResult(result: { token: string; user: UserProfile }) {
+      setToken(result.token);
+      setCachedUserId(result.user.id);
+      this.currentUser = {
+        ...emptyUser(),
+        ...result.user,
+        avatar: resolveAssetUrl(result.user.avatar)
+      };
+      this.role = (result.user as any).role === 'volunteer' ? 'volunteer' : 'elder';
+      this.isLoggedIn = true;
+    },
+
     /** 启动时从后端快照读取当前用户（bootstrap 已按令牌过滤） */
     initUser() {
       try {
@@ -61,15 +74,34 @@ export const useUserStore = defineStore('user', {
       this.loading = true;
       try {
         const result = await apiLogin(phone, password);
-        setToken(result.token);
-        setCachedUserId(result.user.id);
-        this.currentUser = {
-          ...emptyUser(),
-          ...result.user,
-          avatar: resolveAssetUrl(result.user.avatar)
-        };
-        this.role = (result.user as any).role === 'volunteer' ? 'volunteer' : 'elder';
-        this.isLoggedIn = true;
+        this.applyAuthResult(result);
+        return result.user;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /** 微信登录：已绑定过微信的账号直接登录；返回 needBind 时由页面引导绑定手机号 */
+    async loginByWeChat(code: string) {
+      this.loading = true;
+      try {
+        const result = await apiWxLogin(code);
+        if (result.needBind || !result.token || !result.user) {
+          return result;
+        }
+        this.applyAuthResult({ token: result.token, user: result.user });
+        return result;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /** 微信登录后绑定手机号：手机号未注册则注册，已注册需密码校验 */
+    async bindWeChat(payload: WxBindPayload) {
+      this.loading = true;
+      try {
+        const result = await apiWxBind(payload);
+        this.applyAuthResult(result);
         return result.user;
       } finally {
         this.loading = false;
@@ -81,15 +113,7 @@ export const useUserStore = defineStore('user', {
       this.loading = true;
       try {
         const result = await apiRegister(payload);
-        setToken(result.token);
-        setCachedUserId(result.user.id);
-        this.currentUser = {
-          ...emptyUser(),
-          ...result.user,
-          avatar: resolveAssetUrl(result.user.avatar)
-        };
-        this.role = (result.user as any).role === 'volunteer' ? 'volunteer' : 'elder';
-        this.isLoggedIn = true;
+        this.applyAuthResult(result);
         return result.user;
       } finally {
         this.loading = false;

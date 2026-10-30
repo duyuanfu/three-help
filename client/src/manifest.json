@@ -50,7 +50,9 @@
     "quickapp" : {},
     /* 小程序特有相关 */
     "mp-weixin" : {
-        "appid" : "",
+        /* 微信登录必须与公众平台的 AppID 一致，否则 uni.login 拿到的 code
+           在服务端 jscode2session 会报 40013（AppID 不匹配） */
+        "appid" : "wx390f4498c4e0d317",
         "setting" : {
             "urlCheck" : false
         },
