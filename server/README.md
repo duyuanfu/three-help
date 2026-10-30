@@ -14,7 +14,7 @@
 | Maven | 3.6+（本机已装 3.9.16） |
 | MySQL | 5.7 / 8.x，监听 3306 |
 
-> 生产环境用 Docker 部署，见 **第十节**（不需要在服务器上装 JDK / Maven）。
+> 生产环境用 Docker 部署，见 **第十一节**（不需要在服务器上装 JDK / Maven）。
 
 ---
 
@@ -65,7 +65,7 @@ app:
 ```
 
 - 本地直接 `mvn spring-boot:run`：不设环境变量，行为与以前完全一致（`root/root@127.0.0.1:3306/bbb`）
-- 服务器 / Docker：不改进代码，用环境变量注入（见第十节 `.env.example`）
+- 服务器 / Docker：不改进代码，用环境变量注入（见第十一节 `.env.example`）
 - 端口不是 3306 → 设 `DB_PORT`；想用 root → 设 `DB_USER=root` 并确保 MySQL 里存在 `'root'@'%'`
 - 改了 `init.sql` 里的账号密码 → 同步改 `.env`（或环境变量）
 
@@ -503,7 +503,64 @@ docker compose --profile with-mysql up -d --build
 3306 不会出现在宿主机端口上，也就没有暴露到公网的风险。要手工操作数据库就
 `docker exec -it bbb-mysql mysql -uroot -p`。
 
-### 4. 构建与启动
+### 4. 服务器账号权限（用普通用户部署，免 sudo）
+
+一开始用 `sudo` 部署完全没问题，但会留下两个后遗症：`/opt/three-help` 下的文件归 root 所有
+（普通用户改不了 `.env`，`git pull` 还会报 `detected dubious ownership`），
+以及每条 docker 命令都得带 `sudo`。一次性理顺，只需要两件事：
+
+**① 把项目目录交给部署账号**
+
+```bash
+sudo chown -R dyf:dyf /opt/three-help
+```
+
+这一步同时解决三件事：`.env` 可写、`git pull` 不再报 dubious ownership、日志与上传目录可读写。
+
+**② 把账号加入 docker 组**
+
+```bash
+sudo usermod -aG docker dyf
+
+# 让新组在当前 shell 立即生效（或直接退出重登 SSH）
+newgrp docker
+```
+
+**验证**（三条都要通过）：
+
+```bash
+id -nG                                     # 输出里应有 docker
+docker ps                                  # 不报 permission denied
+cd /opt/three-help/server && docker compose ps   # 能看到 bbb-server / bbb-mysql
+```
+
+> 之前用 `sudo docker compose` 起的容器**不用重建**。Docker 是同一个 daemon，
+> compose 文件里写死了 `name: bbb`，换用户执行 `docker compose ps` 看到的就是同一批容器、
+> 同一个 `bbb-mysql-data` 卷。
+
+**`.env` 权限收紧**：里面有数据库密码、地图 key，只给属主读写：
+
+```bash
+chmod 600 /opt/three-help/server/.env
+```
+
+**安全边界必须知道**：`docker` 组的权限约等于 root——组内用户可以把 `/` 挂进容器再改任何文件。
+如果这台服务器还有别人在用，更稳妥的替代方案是不进 docker 组，改用 sudoers 精确放行。
+
+```bash
+# /etc/sudoers.d/bbb-deploy
+dyf ALL=(root) NOPASSWD: /usr/bin/docker
+```
+
+```bash
+sudo chmod 440 /etc/sudoers.d/bbb-deploy
+sudo visudo -c                                    # 语法自检，必须显示 parsed OK
+```
+
+这样 dyf 执行 `sudo docker ...` 不再要密码，而 `sudo` 之外的动作仍受限制、且留有审计记录。
+缺点是命令还得带 `sudo`；要彻底免 sudo 就只能用上面的 docker 组。
+
+### 5. 构建与启动
 
 > 以下命令假定以 `root` 或已加入 `docker` 组的用户执行；普通用户请在命令前加 `sudo`，
 > 否则会报 `permission denied while trying to connect to the Docker daemon`。
@@ -556,7 +613,7 @@ COPY docker/maven-settings.xml /root/.m2/settings.xml
 docker build --build-arg APK_MIRROR=https://mirrors.tuna.tsinghua.edu.cn -t bbb-server:1.0.0 .
 ```
 
-### 5. 配置 Nginx HTTPS 反向代理
+### 6. 配置 Nginx HTTPS 反向代理
 
 新开一个子域名（推荐 `api.example.com`），**不要**在原来的站点里加路径前缀，
 否则前端地址容易出现 `/help/api` 这种双前缀错误。
@@ -691,7 +748,7 @@ location / {
 - 该站点 → 反向代理 → 目标 URL 填 `http://127.0.0.1:18090`
 - 面板的「配置文件」里补一句 `client_max_body_size 12m;`
 
-### 6. 迁移本地已有的上传文件
+### 7. 迁移本地已有的上传文件
 
 数据库里只存相对地址（`/uploads/avatar/202610/xxx.jpg`），换服务器不用改数据，
 但**文件本身要搬过去**。容器以 uid 1000 运行，直接 `docker cp` 会因属主是 root 而写入失败，
@@ -721,7 +778,7 @@ curl -I https://api.example.com/uploads/default/avatar.jpg   # 200
 docker run --rm -v bbb-uploads:/data alpine ls /data/uploads  # avatar image voice default
 ```
 
-### 7. 前端配套修改（不做这步，小程序连不上）
+### 8. 前端配套修改（不做这步，小程序连不上）
 
 #### 7.1 改接口地址
 
@@ -755,7 +812,7 @@ npx uni build -p mp-weixin
 > 好消息：切到 HTTPS 后，`utils/netImage.ts` 里的 HTTP 中转会自动失效
 > （它只拦 `http://`，https 原样返回），不再依赖 `downloadFile` 兜底，性能和稳定性都更好。
 
-### 8. 日常运维
+### 9. 日常运维
 
 ```bash
 # 用内置 MySQL（方案 B）的话，下面每条命令都要带 --profile with-mysql；
@@ -797,7 +854,7 @@ docker run --rm -v bbb-uploads:/data -v /backup:/backup alpine \
 
 恢复上传文件：把上面的 `cp -a` 命令反过来做一次（`-v /backup/uploads.tar.gz` 解包到 `/data`）。
 
-### 9. 故障排查
+### 10. 故障排查
 
 #### 先定位：`Communications link failure`
 
@@ -887,7 +944,7 @@ firewall-cmd --reload
 | 时间差 8 小时、上传目录月份不对 | 容器时区没生效。确认 `TZ=Asia/Shanghai` 且镜像装了 tzdata（Dockerfile 已处理） |
 | 健康检查一直 unhealthy，但接口能访问 | `start_period` 不够。首次启动要跑建表和迁移，等 90 秒再看 |
 
-### 10. 上线前安全清单
+### 11. 上线前安全清单
 
 - [ ] **改掉管理员默认密码**：`u_admin / 13800000000 / admin123` 是仓库里的公开值，必须改
 - [ ] **改掉数据库应用账号密码**：`init.sql` 里的 `bbb / bbb123456` 也是公开值。

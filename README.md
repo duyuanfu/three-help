@@ -76,7 +76,7 @@ docker compose up -d --build
 不占用 443、不与现有 Docker 服务抢端口和容器名。
 
 完整步骤（数据库准备、Nginx 配置、上传文件迁移、前端改 HTTPS 域名、备份与排错）见
-**[`server/README.md` 第十节 · Docker 部署到服务器](server/README.md#十docker-部署到服务器生产环境)**。
+**[`server/README.md` 第十一节 · Docker 部署到服务器](server/README.md#十一docker-部署到服务器生产环境)**。
 
 ## 演示账号
 
