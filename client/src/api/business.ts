@@ -108,6 +108,28 @@ export const apiDeleteContact = (id: string): Promise<void> => {
   return request<void>({ url: `/contacts/${encodeURIComponent(id)}`, method: 'DELETE' });
 };
 
+/** 联系人「更多」页的档案：账号信息（性别/年龄/住址/职业）+ 通讯录关系 */
+export interface ContactProfile {
+  contactId: string | null;
+  userId: string;
+  name: string;
+  avatar: string;
+  phone: string;
+  tag?: string;
+  gender?: string;
+  age?: number;
+  address?: string;
+  occupation?: string;
+  organization?: string;
+  isRealName?: boolean;
+  isFriend?: boolean;
+}
+
+/** 按对方账号ID取档案（聊天页右上角「更多」传的就是账号ID） */
+export const apiContactProfile = (userId: string): Promise<ContactProfile> => {
+  return request<ContactProfile>({ url: `/contacts/by-user/${encodeURIComponent(userId)}` });
+};
+
 /* ------------------------------------------------------------------ */
 /* 广场                                                                */
 /* ------------------------------------------------------------------ */
@@ -143,6 +165,14 @@ export const apiPostFeed = (params: FeedQuery = {}): Promise<PostPage> => {
 /** 我发布的动态（游标分页） */
 export const apiMyPosts = (params: FeedQuery = {}): Promise<PostPage> => {
   return request<PostPage>({ url: '/posts/mine', data: toQuery(params) });
+};
+
+/** 某个用户发布的动态（联系人「更多」页） */
+export const apiUserPosts = (userId: string, params: FeedQuery = {}): Promise<PostPage> => {
+  return request<PostPage>({
+    url: `/posts/user/${encodeURIComponent(userId)}`,
+    data: toQuery(params)
+  });
 };
 
 /** 单条动态详情（评论页按 id 直接打开时用） */

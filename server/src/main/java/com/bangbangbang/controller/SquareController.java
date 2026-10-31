@@ -92,6 +92,24 @@ public class SquareController {
         return ApiResult.ok(page(wrapper, limit));
     }
 
+    /**
+     * 某个用户发布的动态（联系人「更多」页用）。
+     * 动态本身是公开内容，只要登录就能看别人的，不需要额外的可见性判断。
+     */
+    @GetMapping("/user/{userId}")
+    public ApiResult<PostPage> userPosts(@PathVariable String userId,
+                                         @RequestParam(required = false) Long cursor,
+                                         @RequestParam(defaultValue = "20") Integer limit) {
+        UserContext.require();
+        QueryWrapper<Post> wrapper = new QueryWrapper<>();
+        wrapper.eq("author_id", userId);
+        if (cursor != null) {
+            wrapper.gt("sort_no", cursor);
+        }
+        wrapper.orderByAsc("sort_no");
+        return ApiResult.ok(page(wrapper, limit));
+    }
+
     /** 单条动态：评论页直接按 id 打开时用，不依赖列表是否已经加载过这一条 */
     @GetMapping("/{id}")
     public ApiResult<Post> detail(@PathVariable String id) {

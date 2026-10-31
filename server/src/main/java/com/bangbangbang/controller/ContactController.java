@@ -131,6 +131,62 @@ public class ContactController {
         return contact;
     }
 
+    /**
+     * 联系人「更多」页需要的档案。
+     *
+     * 通讯录表只存了姓名/头像/电话等快照，性别、年龄、住址这些在 sys_user 里，
+     * 所以这里以账号信息为准、以通讯录为补充，避免前端再拼两次请求。
+     */
+    @Data
+    public static class ContactProfile {
+        /** 通讯录行 ID；对方不在我的通讯录里时为 null */
+        private String contactId;
+        private String userId;
+        private String name;
+        private String avatar;
+        private String phone;
+        private String tag;
+        private String gender;
+        private Integer age;
+        private String address;
+        private String occupation;
+        private String organization;
+        private Boolean isRealName;
+        private Boolean isFriend;
+    }
+
+    /** 按对方账号ID取档案：从聊天页右上角「更多」进入时传的就是账号ID */
+    @GetMapping("/by-user/{userId}")
+    public ApiResult<ContactProfile> profileOfUser(@PathVariable String userId) {
+        String meId = UserContext.require().id();
+        SysUser user = userMapper.selectById(userId);
+        if (user == null) {
+            throw BizException.of("对方账号不存在");
+        }
+
+        QueryWrapper<Contact> wrapper = new QueryWrapper<>();
+        wrapper.eq("owner_id", meId).eq("target_user_id", userId).last("LIMIT 1");
+        List<Contact> list = contactMapper.selectList(wrapper);
+        Contact contact = (list == null || list.isEmpty()) ? null : list.get(0);
+
+        ContactProfile profile = new ContactProfile();
+        profile.setContactId(contact == null ? null : contact.getId());
+        profile.setUserId(user.getId());
+        // 姓名/头像以账号为准（用户改名后通讯录快照可能还没刷新）
+        profile.setName(blankTo(user.getName(), contact == null ? "" : contact.getName()));
+        profile.setAvatar(blankTo(user.getAvatar(), contact == null ? "" : contact.getAvatar()));
+        profile.setPhone(blankTo(user.getPhone(), contact == null ? "" : contact.getPhone()));
+        profile.setTag(blankTo(user.getIdentityTag(), contact == null ? null : contact.getTag()));
+        profile.setGender(user.getGender());
+        profile.setAge(user.getAge());
+        profile.setAddress(user.getAddress());
+        profile.setOccupation(user.getOccupation());
+        profile.setOrganization(user.getOrganization());
+        profile.setIsRealName(user.getIsRealName());
+        profile.setIsFriend(contact != null);
+        return ApiResult.ok(profile);
+    }
+
     @DeleteMapping("/{id}")
     public ApiResult<Void> delete(@PathVariable String id) {
         String meId = UserContext.require().id();
@@ -143,6 +199,14 @@ public class ContactController {
     }
 
     /* ------------------------------------------------------------------ */
+
+    /** 优先取第一个非空值，都为空时返回空串（前端据此显示「未填写」） */
+    private static String blankTo(String preferred, String fallback) {
+        if (preferred != null && !preferred.trim().isEmpty()) {
+            return preferred;
+        }
+        return fallback == null ? "" : fallback;
+    }
 
     private SysUser findByPhone(String phone) {
         QueryWrapper<SysUser> wrapper = new QueryWrapper<>();
