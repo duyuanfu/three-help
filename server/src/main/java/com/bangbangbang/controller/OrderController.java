@@ -1,6 +1,7 @@
 package com.bangbangbang.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.bangbangbang.common.ApiResult;
 import com.bangbangbang.common.BizException;
 import com.bangbangbang.common.UserContext;
@@ -147,7 +148,35 @@ public class OrderController {
         order.setStatusText("已完成服务");
         order.setCompletedAt(LocalDateTime.now().format(TIME_FMT));
         orderMapper.updateById(order);
-        return ApiResult.ok(toView(order, me.id()));
+
+        // 接单人奖励：完成一单，按订单金额发金币（平台补贴，不从发布者扣）
+        int award = awardPointsToHelper(order);
+        Map<String, Object> view = toView(order, me.id());
+        view.put("pointsAwarded", award);
+        return ApiResult.ok(view);
+    }
+
+    /**
+     * 给接单人加金币。
+     *
+     * 只会在「第一次把订单标记为已完成」时被调用：complete() 开头对已完成的订单直接返回，
+     * 所以重复点击、双方各点一次都不会重复发放。
+     *
+     * 用 SQL 自增而不是「查余额 → 改 → 写回」，避免发布者与接单人同时点完成时互相覆盖余额。
+     */
+    private int awardPointsToHelper(HelpOrder order) {
+        String helperId = order.getHelperId();
+        if (helperId == null || helperId.isEmpty()) {
+            return 0;
+        }
+        int bounty = order.getBounty() == null ? 0 : order.getBounty();
+        if (bounty <= 0) {
+            return 0;
+        }
+        UpdateWrapper<SysUser> wrapper = new UpdateWrapper<>();
+        wrapper.eq("id", helperId).setSql("points = points + " + bounty);
+        userMapper.update(null, wrapper);
+        return bounty;
     }
 
     /** 取消：仅发布者，且未完成 */

@@ -67,6 +67,8 @@ export interface HelpOrder {
   isMine?: boolean;
   /** 是否是我接的单 */
   isHelper?: boolean;
+  /** 本次完成发放给接单人的金币数；重复完成或非接单人时不存在 */
+  pointsAwarded?: number;
 }
 
 // 通讯录联系人

@@ -66,13 +66,13 @@
 
       <!-- 4. 下单金额 -->
       <view class="field-group">
-        <text class="field-label">下单金额</text>
+        <text class="field-label">下单金额（金币）</text>
         <view class="input-box">
           <input 
             v-model="bounty" 
             type="number"
             class="elder-input" 
-            placeholder="请输入金额..." 
+            placeholder="请输入金币数..." 
             placeholder-class="placeholder-text"
           />
         </view>

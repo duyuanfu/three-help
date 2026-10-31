@@ -319,9 +319,20 @@ const handleComplete = (order: HelpOrder) => {
       if (!res.confirm) return;
       uni.showLoading({ title: '处理中...', mask: true });
       try {
-        await orderStore.completeOrder(order.id);
+        const updated = await orderStore.completeOrder(order.id);
         uni.hideLoading();
-        uni.showToast({ title: '订单已完成', icon: 'none' });
+        // 接单人完成一单会拿到金币：刷新一次余额，并把奖励明确告诉用户，
+        // 否则「我的」里的金币数要等下次启动快照才会变，看起来像没发。
+        if (updated.pointsAwarded && updated.isHelper) {
+          await userStore.refreshMe();
+          uni.showToast({
+            title: `服务完成，获得 ${updated.pointsAwarded} 金币`,
+            icon: 'none',
+            duration: 2500
+          });
+        } else {
+          uni.showToast({ title: '订单已完成', icon: 'none' });
+        }
       } catch (e: any) {
         uni.hideLoading();
         uni.showToast({ title: e?.message || '操作失败', icon: 'none', duration: 2200 });
