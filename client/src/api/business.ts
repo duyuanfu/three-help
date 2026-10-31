@@ -58,8 +58,17 @@ export const apiMarkSessionRead = (sessionId: string): Promise<void> => {
   return request<void>({ url: `/sessions/${encodeURIComponent(sessionId)}/read`, method: 'POST', silent: true });
 };
 
-export const apiListMessages = (sessionId: string): Promise<ChatMessage[]> => {
-  return request<ChatMessage[]>({ url: '/messages?sessionId=' + encodeURIComponent(sessionId) });
+/**
+ * 会话消息。
+ *
+ * @param since 只取比这个时间戳更新的消息（轮询用）；不传则返回最近 limit 条
+ */
+export const apiListMessages = (sessionId: string, since?: number): Promise<ChatMessage[]> => {
+  let url = '/messages?sessionId=' + encodeURIComponent(sessionId);
+  if (since !== undefined && since !== null) {
+    url += '&since=' + since;
+  }
+  return request<ChatMessage[]>({ url });
 };
 
 export interface SendMessagePayload {
@@ -103,8 +112,42 @@ export const apiDeleteContact = (id: string): Promise<void> => {
 /* 广场                                                                */
 /* ------------------------------------------------------------------ */
 
-export const apiListPosts = (): Promise<PostItem[]> => {
-  return request<PostItem[]>({ url: '/posts' });
+/** 分页结果：nextCursor 为 null 表示已经到底 */
+export interface PostPage {
+  items: PostItem[];
+  nextCursor: number | null;
+  hasMore: boolean;
+}
+
+export interface FeedQuery {
+  /** 上一页返回的 nextCursor；首页不传 */
+  cursor?: number | null;
+  /** 按作者姓名搜索（服务端 LIKE，前端本地过滤在分页下搜不全） */
+  keyword?: string;
+  limit?: number;
+}
+
+const toQuery = (params: FeedQuery): Record<string, any> => {
+  const data: Record<string, any> = {};
+  if (params.cursor !== undefined && params.cursor !== null) data.cursor = params.cursor;
+  if (params.keyword) data.keyword = params.keyword;
+  if (params.limit) data.limit = params.limit;
+  return data;
+};
+
+/** 广场全部动态（游标分页） */
+export const apiPostFeed = (params: FeedQuery = {}): Promise<PostPage> => {
+  return request<PostPage>({ url: '/posts/feed', data: toQuery(params) });
+};
+
+/** 我发布的动态（游标分页） */
+export const apiMyPosts = (params: FeedQuery = {}): Promise<PostPage> => {
+  return request<PostPage>({ url: '/posts/mine', data: toQuery(params) });
+};
+
+/** 单条动态详情（评论页按 id 直接打开时用） */
+export const apiGetPost = (id: string): Promise<PostItem> => {
+  return request<PostItem>({ url: `/posts/${encodeURIComponent(id)}` });
 };
 
 export const apiCreatePost = (content: string, images: string[] = []): Promise<PostItem> => {

@@ -115,12 +115,40 @@ public class ChatService {
     /* 消息                                                               */
     /* ------------------------------------------------------------------ */
 
-    public List<ChatMessage> listMessages(String meId, String sessionId) {
+    /**
+     * 会话消息。
+     *
+     * @param since 只需比这个时间戳更新的消息（聊天页轮询用；不传则取最近 limit 条）
+     * @param limit 首次加载返回的最大条数，默认 200、上限 500
+     *
+     * 不能让这个接口无条件返回全部历史：聊天页每 3 秒轮询一次，
+     * 一段几千条的老会话会让「查询量随时间线性增长」变成持续的后台压力。
+     * 轮询带 since 之后，每次只传回真正新增的那几条。
+     */
+    public List<ChatMessage> listMessages(String meId, String sessionId, Long since, Integer limit) {
         requireSession(meId, sessionId);
+        int size = limit == null ? 200 : Math.max(1, Math.min(limit, 500));
+
         QueryWrapper<ChatMessage> wrapper = new QueryWrapper<>();
-        wrapper.eq("session_id", sessionId).orderByAsc("timestamp");
+        wrapper.eq("session_id", sessionId);
+        if (since != null) {
+            wrapper.gt("timestamp", since).orderByAsc("timestamp").last("LIMIT " + size);
+        } else {
+            // 倒序取最近 N 条，再翻回时间正序给前端渲染
+            wrapper.orderByDesc("timestamp").last("LIMIT " + size);
+        }
+
         List<ChatMessage> list = messageMapper.selectList(wrapper);
-        return list == null ? new ArrayList<>() : list;
+        if (list == null || list.isEmpty()) {
+            return new ArrayList<>();
+        }
+        if (since != null) {
+            return list;
+        }
+        List<ChatMessage> ascending = new ArrayList<>(list);
+        ascending.sort(java.util.Comparator.comparing(
+                message -> message.getTimestamp() == null ? 0L : message.getTimestamp()));
+        return ascending;
     }
 
     @Transactional

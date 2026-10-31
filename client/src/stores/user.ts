@@ -2,8 +2,8 @@ import { defineStore } from 'pinia';
 import type { UserProfile } from '../types';
 import { TABLES } from '../utils/db';
 import { getToken, setToken, clearToken, setCachedUserId, resolveAssetUrl } from '../utils/token';
-import { apiLogin, apiRegister, apiLogout, apiMe, apiUpdateProfile, apiWxLogin, apiWxBind } from '../api/auth';
-import type { RegisterPayload, WxBindPayload } from '../api/auth';
+import { apiLogin, apiRegister, apiLogout, apiMe, apiUpdateProfile } from '../api/auth';
+import type { RegisterPayload } from '../api/auth';
 
 /** 未登录时的空资料，保证页面不会因为字段缺失而报错 */
 const emptyUser = (): UserProfile => ({
@@ -74,33 +74,6 @@ export const useUserStore = defineStore('user', {
       this.loading = true;
       try {
         const result = await apiLogin(phone, password);
-        this.applyAuthResult(result);
-        return result.user;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    /** 微信登录：已绑定过微信的账号直接登录；返回 needBind 时由页面引导绑定手机号 */
-    async loginByWeChat(code: string) {
-      this.loading = true;
-      try {
-        const result = await apiWxLogin(code);
-        if (result.needBind || !result.token || !result.user) {
-          return result;
-        }
-        this.applyAuthResult({ token: result.token, user: result.user });
-        return result;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    /** 微信登录后绑定手机号：手机号未注册则注册，已注册需密码校验 */
-    async bindWeChat(payload: WxBindPayload) {
-      this.loading = true;
-      try {
-        const result = await apiWxBind(payload);
         this.applyAuthResult(result);
         return result.user;
       } finally {

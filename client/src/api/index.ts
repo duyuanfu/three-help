@@ -1,6 +1,6 @@
 import { request } from './request';
 
-/** 全部业务数据（13 张表） */
+/** 启动快照（10 张表：只含按用户过滤、体量有上限的） */
 export type BootstrapData = Record<string, any>;
 
 /** 一次性拉取全量数据 */

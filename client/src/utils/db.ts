@@ -5,12 +5,15 @@
  *
  * 设计原则：
  * 1. 全部业务数据以 MySQL 为唯一可信源，本地不再落 Storage
- * 2. 启动时通过 /api/bootstrap 一次性拉取 13 张表到内存快照
+ * 2. 启动时通过 /api/bootstrap 一次性拉取「我的数据」到内存快照
+ *    （只含按登录用户过滤、体量有上限的表）
  * 3. 对外仍暴露 TABLES.xxx.all() / insert() / update() / remove() / replaceAll()
  *    这套同步 API，页面与 Store 代码无需感知异步细节
  * 4. 写操作采用「内存乐观更新 + 异步落库」，失败时控制台告警并回读后端修正
  *
- * 这样既满足「数据全部存 MySQL」，又不会把 33 个页面全部改成 await 风格。
+ * 不在快照里的数据（它们会无限增长，不适合整表塞进内存）：
+ *   - 广场动态 / 评论 → 走 /api/posts/feed 游标分页，见 stores/square.ts
+ *   - 聊天消息       → 走 /api/chat/messages（GET 拉取、POST 单条写入），见 stores/chat.ts
  */
 
 import {
@@ -94,20 +97,10 @@ const fireAndForget = (task: Promise<any>, action: string) => {
 };
 
 /* ------------------------------------------------------------------ */
-/* 结构适配：messages 表在前端是「会话ID → 消息数组」的对象              */
+/* 结构适配：购物车在前端是 { goods, count }，后端是 { goodsId, quantity }  */
 /* ------------------------------------------------------------------ */
 
 const serverToClient = (name: string, value: any): any => {
-  if (name === 'messages') {    const rows: any[] = Array.isArray(value) ? value : [];
-    const grouped: Record<string, any[]> = {};
-    rows.forEach((row) => {
-      const sid = row.sessionId;
-      if (!sid) return;
-      if (!grouped[sid]) grouped[sid] = [];
-      grouped[sid].push(row);
-    });
-    return grouped;
-  }
   if (name === 'cart') {
     // 后端返回的是 { id, goodsId, quantity, goods }，前端用 { goods, count }
     const rows: any[] = Array.isArray(value) ? value : [];
@@ -124,20 +117,6 @@ const serverToClient = (name: string, value: any): any => {
 };
 
 const clientToServer = (name: string, value: any): any => {
-  if (name === 'messages') {
-    const grouped = value && typeof value === 'object' ? value : {};
-    const rows: any[] = [];
-    Object.keys(grouped).forEach((sid) => {
-      const list = grouped[sid];
-      if (!Array.isArray(list)) return;
-      list.forEach((row) => {
-        rows.push({ ...row, sessionId: row.sessionId || sid });
-      });
-    });
-    // 按时间戳升序，保证后端存储顺序稳定
-    rows.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-    return rows;
-  }
   if (name === 'cart') {
     // 前端 { goods, count } → 后端 { goodsId, quantity }
     const rows: any[] = Array.isArray(value) ? value : [];
@@ -272,14 +251,7 @@ export const defineTable = <T extends Row | Row[]>(name: string, options: TableO
       }
       write(rows);
 
-      if (name === 'messages') {
-        fireAndForget(
-          replaceTable(name, toServerRows(name, rows, Boolean(meta.single)), true),
-          `insert ${name}`
-        );
-      } else {
-        fireAndForget(insertRow(name, row, true), `insert ${name}`);
-      }
+      fireAndForget(insertRow(name, row, true), `insert ${name}`);
       return row;
     },
 
@@ -291,14 +263,7 @@ export const defineTable = <T extends Row | Row[]>(name: string, options: TableO
       rows[idx] = { ...rows[idx], ...patch };
       write(rows);
 
-      if (name === 'messages') {
-        fireAndForget(
-          replaceTable(name, toServerRows(name, rows, Boolean(meta.single)), true),
-          `update ${name}`
-        );
-      } else {
-        fireAndForget(patchRow(name, id, patch, true), `update ${name}`);
-      }
+      fireAndForget(patchRow(name, id, patch, true), `update ${name}`);
       return true;
     },
 
@@ -327,16 +292,9 @@ export const defineTable = <T extends Row | Row[]>(name: string, options: TableO
       if (next.length !== before) {
         write(next);
 
-        if (name === 'messages') {
-          fireAndForget(
-            replaceTable(name, toServerRows(name, next, Boolean(meta.single)), true),
-            `remove ${name}`
-          );
-        } else {
-          removedIds.filter(Boolean).forEach((id) => {
-            fireAndForget(deleteRow(name, id, true), `remove ${name}/${id}`);
-          });
-        }
+        removedIds.filter(Boolean).forEach((id) => {
+          fireAndForget(deleteRow(name, id, true), `remove ${name}/${id}`);
+        });
       }
       return before - next.length;
     }
@@ -349,6 +307,13 @@ export const defineTable = <T extends Row | Row[]>(name: string, options: TableO
 /* 全局表注册                                                          */
 /* ------------------------------------------------------------------ */
 
+/**
+ * 全局表注册。
+ *
+ * 这里只登记「按登录用户过滤、体量有上限」的表。
+ * 广场动态/评论、聊天消息不在此列：它们会无限增长，
+ * 必须走各自的分页/增量接口，见文件头部说明。
+ */
 export const TABLES = {
   user: defineTable<any>('user', { single: true }),
   setting: defineTable<any>('setting', { single: true }),
@@ -356,9 +321,6 @@ export const TABLES = {
   exchangeOrders: defineTable<any[]>('exchangeOrders'),
   contacts: defineTable<any[]>('contacts'),
   sessions: defineTable<any[]>('sessions'),
-  messages: defineTable<any>('messages', { single: true }),
-  posts: defineTable<any[]>('posts'),
-  comments: defineTable<any[]>('comments'),
   addresses: defineTable<any[]>('addresses'),
   helpers: defineTable<any[]>('helpers'),
   goods: defineTable<any[]>('goods'),

@@ -13,58 +13,58 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 启动引导：一次性返回「当前登录用户可见」的全量数据。
+ * 启动引导：一次性返回「当前登录用户可见」的数据。
  *
- * 与早期版本的区别：数据按登录用户过滤，
- * 通讯录、订单、会话、地址、购物车都是各自私有的，
- * 广场动态和商品则是全局公开的。
+ * 只包含按用户过滤、体量有上限的表；
+ * 动态、评论、聊天消息因为会无限增长，改走各自的分页/增量接口。
  */
 @Service
 public class BootstrapService {
+
+    /*
+     * 这里只放「按登录用户过滤、体量有上限」的表。
+     *
+     * 三类会随时间无限增长的数据都不在启动快照里：
+     *   动态 / 评论 → /api/posts/feed 游标分页、/api/posts/{id}/comments 按需加载
+     *   聊天消息   → /api/chat/messages（GET 拉取、POST 单条写入）
+     * 因为 /api/bootstrap 是冷启动时阻塞整个 App 的单个请求（前端 15s 超时），
+     * 一旦体积随数据量增长，最终会在某天直接打不开，而不是慢慢变卡。
+     */
 
     private final AppSettingMapper settingMapper;
     private final SysUserMapper userMapper;
     private final HelpOrderMapper orderMapper;
     private final ExchangeOrderMapper exchangeOrderMapper;
     private final ContactMapper contactMapper;
-    private final ChatSessionMapper sessionMapper;
-    private final ChatMessageMapper messageMapper;
-    private final PostMapper postMapper;
-    private final PostCommentMapper commentMapper;
     private final AddressMapper addressMapper;
     private final HelperMapper helperMapper;
     private final GoodsMapper goodsMapper;
     private final CartItemMapper cartMapper;
     private final ChatService chatService;
+    private final UserDisplayService userDisplayService;
 
     public BootstrapService(AppSettingMapper settingMapper,
                             SysUserMapper userMapper,
                             HelpOrderMapper orderMapper,
                             ExchangeOrderMapper exchangeOrderMapper,
                             ContactMapper contactMapper,
-                            ChatSessionMapper sessionMapper,
-                            ChatMessageMapper messageMapper,
-                            PostMapper postMapper,
-                            PostCommentMapper commentMapper,
                             AddressMapper addressMapper,
                             HelperMapper helperMapper,
                             GoodsMapper goodsMapper,
                             CartItemMapper cartMapper,
-                            ChatService chatService) {
+                            ChatService chatService,
+                            UserDisplayService userDisplayService) {
         this.settingMapper = settingMapper;
         this.userMapper = userMapper;
         this.orderMapper = orderMapper;
         this.exchangeOrderMapper = exchangeOrderMapper;
         this.contactMapper = contactMapper;
-        this.sessionMapper = sessionMapper;
-        this.messageMapper = messageMapper;
-        this.postMapper = postMapper;
-        this.commentMapper = commentMapper;
         this.addressMapper = addressMapper;
         this.helperMapper = helperMapper;
         this.goodsMapper = goodsMapper;
         this.cartMapper = cartMapper;
         this.chatService = chatService;
+        this.userDisplayService = userDisplayService;
     }
 
     public Map<String, Object> load() {
@@ -78,9 +78,6 @@ public class BootstrapService {
         data.put("exchangeOrders", loadOwnedExchangeOrders(meId));
         data.put("contacts", loadContacts(meId));
         data.put("sessions", chatService.listSessions(meId));
-        data.put("messages", loadMessages(meId));
-        data.put("posts", postMapper.selectList(orderBy("sort_no", "ASC")));
-        data.put("comments", commentMapper.selectList(orderBy("sort_no", "ASC")));
         data.put("addresses", loadAddresses(meId));
         data.put("helpers", helperMapper.selectList(orderBy("sort_no", "ASC")));
         data.put("goods", goodsMapper.selectList(orderBy("sort_no", "ASC")));
@@ -118,6 +115,8 @@ public class BootstrapService {
             order.setIsMine(meId.equals(order.getCreatorId()));
             order.setIsHelper(meId.equals(order.getHelperId()));
         }
+        // 订单里的姓名/头像是下单时的快照，统一校准成账号最新资料
+        userDisplayService.fillOrders(list);
         return list;
     }
 
@@ -132,31 +131,17 @@ public class BootstrapService {
         QueryWrapper<Contact> wrapper = new QueryWrapper<>();
         wrapper.eq("owner_id", meId).orderByAsc("sort_no");
         List<Contact> list = contactMapper.selectList(wrapper);
-        return list == null ? new ArrayList<>() : list;
+        if (list == null) {
+            return new ArrayList<>();
+        }
+        userDisplayService.fillContacts(list);
+        return list;
     }
 
     private List<Address> loadAddresses(String meId) {
         QueryWrapper<Address> wrapper = new QueryWrapper<>();
         wrapper.eq("owner_id", meId).orderByAsc("sort_no");
         List<Address> list = addressMapper.selectList(wrapper);
-        return list == null ? new ArrayList<>() : list;
-    }
-
-    /** 我的所有会话中的消息，前端会按 sessionId 分组 */
-    private List<ChatMessage> loadMessages(String meId) {
-        QueryWrapper<ChatSession> sessionWrapper = new QueryWrapper<>();
-        sessionWrapper.and(w -> w.eq("user_a_id", meId).or().eq("user_b_id", meId));
-        List<ChatSession> sessions = sessionMapper.selectList(sessionWrapper);
-        if (sessions == null || sessions.isEmpty()) {
-            return new ArrayList<>();
-        }
-        List<String> ids = new ArrayList<>();
-        for (ChatSession session : sessions) {
-            ids.add(session.getSessionId());
-        }
-        QueryWrapper<ChatMessage> wrapper = new QueryWrapper<>();
-        wrapper.in("session_id", ids).orderByAsc("timestamp");
-        List<ChatMessage> list = messageMapper.selectList(wrapper);
         return list == null ? new ArrayList<>() : list;
     }
 

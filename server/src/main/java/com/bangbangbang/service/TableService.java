@@ -64,7 +64,11 @@ public class TableService {
     private final Map<String, TableDef> tables = new LinkedHashMap<>();
     private final ObjectMapper objectMapper;
 
+    /** 用户资料变更后，把姓名/头像/标签同步到各表的冗余字段 */
+    private final UserProfileSyncService profileSyncService;
+
     public TableService(ObjectMapper objectMapper,
+                        UserProfileSyncService profileSyncService,
                         SysUserMapper sysUserMapper,
                         AppSettingMapper appSettingMapper,
                         HelpOrderMapper helpOrderMapper,
@@ -79,6 +83,7 @@ public class TableService {
                         GoodsMapper goodsMapper,
                         CartItemMapper cartItemMapper) {
         this.objectMapper = objectMapper;
+        this.profileSyncService = profileSyncService;
 
         add("user", sysUserMapper, "id", true, null, true, SysUser.class);
         add("setting", appSettingMapper, "id", true, null, true, AppSetting.class);
@@ -157,6 +162,8 @@ public class TableService {
             body.put("id", userId);
             entity = objectMapper.convertValue(body, def.getEntityClass());
             def.getMapper().updateById(entity);
+            // 改了姓名/头像/标签，其它表里的快照要跟着变，否则动态和私信会显示成两个人
+            profileSyncService.syncByUserId(userId);
             return def.getMapper().selectById(userId);
         }
 
@@ -201,6 +208,8 @@ public class TableService {
             body.put("id", userId);
             Object entity = objectMapper.convertValue(body, def.getEntityClass());
             def.getMapper().updateById(entity);
+            // 个人资料页保存走的就是这里（POST /api/tables/user/me）
+            profileSyncService.syncByUserId(userId);
             return def.getMapper().selectById(userId);
         }
 

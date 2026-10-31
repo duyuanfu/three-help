@@ -10,13 +10,14 @@ import { refreshAll } from '../utils/session';
  * onPullDownRefresh 必须在 setup 期间同步注册，所以这是个组合式函数，
  * 不能在异步回调里调用。
  *
- * @param after 刷新成功后的额外处理（例如重新计算列表滚动位置）
+ * @param after 刷新成功后的额外处理（例如重新拉动态第一页）；
+ *              返回 Promise 时会等它完成再收起下拉动画
  */
-export const usePullRefresh = (after?: () => void) => {
+export const usePullRefresh = (after?: () => void | Promise<void>) => {
   onPullDownRefresh(async () => {
     try {
       await refreshAll();
-      if (after) after();
+      if (after) await after();
     } catch (e: any) {
       console.error('[pull-refresh] 刷新失败', e);
       uni.showToast({

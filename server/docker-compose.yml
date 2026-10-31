@@ -42,10 +42,6 @@ services:
       # 腾讯位置服务 key：首页「自动定位」用它把经纬度反查城市。
       # 不填不影响启动，自动定位会退回「手动选择位置」。
       TENCENT_MAP_KEY: ${TENCENT_MAP_KEY:-}
-      # 微信小程序登录。AppSecret 等价于小程序的服务端身份，泄露后别人可
-      # 冒充你的小程序换 openid，务必只放这里、不要进仓库、不要下发前端。
-      WX_APPID: ${WX_APPID:-}
-      WX_SECRET: ${WX_SECRET:-}
       # 和其他服务共存时内存别放太开。-Xmx 就是这个服务的硬上限，
       # 服务器内存紧张就改成 384m，充裕可给 1g。
       JAVA_OPTS: "-Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai"

@@ -46,6 +46,7 @@ import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { useSettingStore } from '../../stores/setting';
 import { useUserStore } from '../../stores/user';
+import { refreshAll } from '../../utils/session';
 
 const settingStore = useSettingStore();
 const userStore = useUserStore();
@@ -79,6 +80,8 @@ const handleCompleteVerify = () => {
     // 人脸通过 → 写回实名状态（先落库再提示，失败不提示"已实名"）
     const saved = await userStore.setRealName(realName.value || userStore.currentUser.name);
     if (saved) {
+      // 实名会带来身份标签的变化，各处的展示快照一起刷新
+      await refreshAll().catch((e) => console.error('[verify] 资料同步失败', e));
       uni.showToast({ title: '实名认证通过', icon: 'success' });
     } else {
       uni.showToast({ title: '实名状态保存失败，请稍后重试', icon: 'none', duration: 2200 });

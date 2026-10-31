@@ -303,10 +303,9 @@ const startPolling = () => {
   pollTimer = setInterval(async () => {
     if (!sessionId.value) return;
     try {
-      const before = (chatStore.messages[sessionId.value] || []).length;
-      await chatStore.loadMessages(sessionId.value);
-      const after = (chatStore.messages[sessionId.value] || []).length;
-      if (after > before) {
+      // 只拉增量：带 since 后每次只传回新增的几条，不再整段历史重传
+      const added = await chatStore.pollNewMessages(sessionId.value);
+      if (added > 0) {
         chatStore.markRead(sessionId.value);
         scrollToBottom();
       }

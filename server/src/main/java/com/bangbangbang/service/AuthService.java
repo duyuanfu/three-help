@@ -25,16 +25,13 @@ public class AuthService {
     private final SysUserMapper userMapper;
     private final PasswordService passwordService;
     private final TokenService tokenService;
-    private final WxService wxService;
 
     public AuthService(SysUserMapper userMapper,
                        PasswordService passwordService,
-                       TokenService tokenService,
-                       WxService wxService) {
+                       TokenService tokenService) {
         this.userMapper = userMapper;
         this.passwordService = passwordService;
         this.tokenService = tokenService;
-        this.wxService = wxService;
     }
 
     @Data
@@ -51,22 +48,6 @@ public class AuthService {
     public static class LoginRequest {
         private String phone;
         private String password;
-    }
-
-    /** 微信登录：code 由小程序端 uni.login 获取 */
-    @Data
-    public static class WxLoginRequest {
-        private String code;
-    }
-
-    /** 微信登录后绑定手机号（首次使用即注册，老账号需验密码） */
-    @Data
-    public static class WxBindRequest {
-        private String ticket;
-        private String phone;
-        private String password;
-        private String name;
-        private Integer age;
     }
 
     @Transactional
@@ -137,106 +118,6 @@ public class AuthService {
         user.setUpdatedAt(LocalDateTime.now());
         userMapper.updateById(user);
 
-        return buildAuthResult(user);
-    }
-
-    /**
-     * 微信登录：code → openid。
-     * 已绑定过微信的账号直接返回令牌；否则返回 needBind=true + 一次性票据，
-     * 由前端引导到绑定手机号页，绑完再签发令牌。
-     */
-    public Map<String, Object> wxLogin(WxLoginRequest req) {
-        String code = trim(req.getCode());
-        if (code.isEmpty()) {
-            throw BizException.of("微信授权失败，请重新点击微信登录");
-        }
-        String openid = wxService.code2Openid(code);
-
-        QueryWrapper<SysUser> wrapper = new QueryWrapper<>();
-        wrapper.eq("openid", openid);
-        List<SysUser> list = userMapper.selectList(wrapper);
-        if (list != null && !list.isEmpty()) {
-            SysUser user = list.get(0);
-            user.setIsLoggedIn(true);
-            user.setUpdatedAt(LocalDateTime.now());
-            userMapper.updateById(user);
-
-            Map<String, Object> result = buildAuthResult(user);
-            result.put("needBind", false);
-            return result;
-        }
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("needBind", true);
-        result.put("ticket", wxService.issueTicket(openid));
-        return result;
-    }
-
-    /**
-     * 微信登录后绑定手机号。
-     *
-     * 手机号未注册 → 直接注册并绑定（姓名必填，密码作为该账号的登录凭证）
-     * 手机号已注册 → 必须校验密码，否则任何人输入他人手机号就能把别人的账号绑到自己微信上
-     */
-    @Transactional
-    public Map<String, Object> wxBind(WxBindRequest req) {
-        String openid = wxService.resolveTicket(req.getTicket());
-        wxService.invalidateTicket(req.getTicket());
-
-        String phone = trim(req.getPhone());
-        String name = trim(req.getName());
-        String password = req.getPassword();
-
-        if (!phone.matches("\\d{11}")) {
-            throw BizException.of("请填写 11 位手机号");
-        }
-        if (password == null || password.length() < 4) {
-            throw BizException.of("密码至少 4 位");
-        }
-        if (req.getAge() != null && (req.getAge() < 1 || req.getAge() > 150)) {
-            throw BizException.of("请输入正确的年龄（1-150）");
-        }
-
-        QueryWrapper<SysUser> wrapper = new QueryWrapper<>();
-        wrapper.eq("phone", phone);
-        List<SysUser> list = userMapper.selectList(wrapper);
-        SysUser user = (list == null || list.isEmpty()) ? null : list.get(0);
-
-        if (user == null) {
-            if (name.isEmpty()) {
-                throw BizException.of("首次使用微信登录，请填写姓名");
-            }
-            SysUser created = new SysUser();
-            created.setId("u_" + System.currentTimeMillis());
-            created.setName(name);
-            created.setPhone(phone);
-            created.setAge(req.getAge() == null ? 60 : req.getAge());
-            created.setGender("男");
-            created.setRole("elder");
-            created.setAvatar(DEFAULT_AVATAR);
-            created.setPoints(0);
-            created.setIsRealName(false);
-            created.setIsLoggedIn(true);
-            created.setOpenid(openid);
-            created.setPasswordHash(passwordService.hash(password));
-            created.setCreatedAt(LocalDateTime.now());
-            created.setUpdatedAt(LocalDateTime.now());
-            userMapper.insert(created);
-            return buildAuthResult(created);
-        }
-
-        if (!passwordService.matches(password, user.getPasswordHash())) {
-            throw BizException.of("手机号或密码不正确");
-        }
-        String bound = user.getOpenid();
-        if (bound != null && !bound.isEmpty() && !bound.equals(openid)) {
-            throw BizException.of("该手机号已绑定其它微信，请使用手机号密码登录");
-        }
-
-        user.setOpenid(openid);
-        user.setIsLoggedIn(true);
-        user.setUpdatedAt(LocalDateTime.now());
-        userMapper.updateById(user);
         return buildAuthResult(user);
     }
 

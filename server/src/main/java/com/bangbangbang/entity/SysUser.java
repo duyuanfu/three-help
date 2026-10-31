@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -28,10 +27,6 @@ public class SysUser {
     /** PBKDF2 密码哈希，永不下发到前端 */
     @JsonIgnore
     private String passwordHash;
-
-    /** 微信 openid，仅服务端使用，绝不下发（前端拿到就能冒充绑定关系） */
-    @JsonIgnore
-    private String openid;
 
     private Boolean isRealName;
     private String identityTag;

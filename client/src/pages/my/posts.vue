@@ -13,7 +13,12 @@
     </view>
 
     <!-- 动态卡片列表 (严格对齐原型) -->
-    <scroll-view scroll-y class="posts-scroll-list">
+    <scroll-view
+      scroll-y
+      class="posts-scroll-list"
+      :lower-threshold="120"
+      @scrolltolower="handleLoadMore"
+    >
       <view 
         v-for="post in myPostList" 
         :key="post.id" 
@@ -47,7 +52,13 @@
         </view>
       </view>
 
-      <view class="elder-no-more">
+      <view v-if="squareStore.myLoading" class="feed-tip">
+        <text>加载中...</text>
+      </view>
+      <view v-else-if="squareStore.myHasMore" class="feed-tip">
+        <text>上拉加载更多</text>
+      </view>
+      <view v-else class="elder-no-more">
         <text>——暂无更多——</text>
       </view>
     </scroll-view>
@@ -56,6 +67,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import { useSquareStore } from '../../stores/square';
 import { useSettingStore } from '../../stores/setting';
 import { avatarSrc } from '../../utils/avatar';
@@ -70,6 +82,23 @@ const pageStyle = computed(() => ({
 const myPostList = computed(() => {
   return squareStore.myPosts;
 });
+
+/**
+ * 「我的动态」走独立接口分页，不受广场翻到第几页影响。
+ * 只在没有数据时拉第一页：从评论页返回时如果无条件重载，
+ * 用户已经翻到的位置会被打回顶部。
+ * 新增/删除动态由 store 就地更新两个列表，不需要整页重拉。
+ */
+onShow(() => {
+  if (squareStore.myLoaded) return;
+  squareStore.loadMyPosts(true).catch((e: any) => {
+    uni.showToast({ title: e?.message || '动态加载失败', icon: 'none', duration: 2200 });
+  });
+});
+
+const handleLoadMore = () => {
+  squareStore.loadMoreMyPosts().catch((e) => console.error('[my-posts] 加载下一页失败', e));
+};
 
 const goBack = () => {
   uni.navigateBack({ delta: 1 });
@@ -141,6 +170,15 @@ const handleDelete = (postId: string) => {
 
 .posts-scroll-list {
   flex: 1;
+}
+
+/* 翻页提示：与 .elder-no-more 同一视觉层级 */
+.feed-tip {
+  text-align: center;
+  padding: 24rpx 0 40rpx 0;
+  font-size: calc(28rpx * var(--font-scale, 1));
+  color: #8F959E;
+  font-weight: 600;
 }
 
 /* 动态卡片 (严格对齐我的动态.png) */

@@ -68,9 +68,9 @@
         </view>
 
         <view class="third-icons-row">
-          <!-- 微信 (来自 5_登录页/登录页_微信.png) -->
+          <!-- 微信 (来自 5_登录页/登录页_微信.png)：功能暂未开放，图标先占位 -->
           <view class="third-icon-item" hover-class="icon-hover" @tap="quickWeChatLogin">
-            <image src="../../static/login/wechat-cut.png" mode="aspectFit" class="third-icon-img" />
+            <image src="/static/login/wechat-cut.png" mode="aspectFit" class="third-icon-img" />
             <text class="third-label">微信</text>
           </view>
 
@@ -131,12 +131,26 @@ const goToRegister = () => {
   uni.navigateTo({ url: '/pages/auth/register' });
 };
 
+const SERVICE_PHONE = '13850851792';
+
 const handleForgot = () => {
   uni.showModal({
     title: '忘记密码',
-    content: '请联系社区服务人员，通过已绑定的手机号验证后重置密码。',
-    showCancel: false,
-    confirmText: '知道了'
+    content: `请联系社区服务人员协助重置密码：\n${SERVICE_PHONE}`,
+    confirmText: '拨打电话',
+    confirmColor: '#1B65F0',
+    cancelText: '知道了',
+    success: (res) => {
+      if (res.confirm) {
+        uni.makePhoneCall({
+          phoneNumber: SERVICE_PHONE,
+          fail: () => {
+            // 用户取消授权或设备不支持拨号时，至少把号码留在眼前
+            uni.showToast({ title: '请手动拨打 ' + SERVICE_PHONE, icon: 'none', duration: 3000 });
+          }
+        });
+      }
+    }
   });
 };
 
@@ -146,53 +160,9 @@ const goToFeedback = () => {
   });
 };
 
-/** 取微信授权 code（有效期 5 分钟、只能用一次，所以每次点击都要重新取） */
-const getWxCode = (): Promise<string> =>
-  new Promise((resolve, reject) => {
-    uni.login({
-      provider: 'weixin',
-      success: (res: any) => {
-        if (res && res.code) {
-          resolve(res.code);
-        } else {
-          reject(new Error('微信授权失败，请重试'));
-        }
-      },
-      fail: () => reject(new Error('微信授权失败，请重试'))
-    });
-  });
-
-/**
- * 微信登录：openid 已绑定账号就直接进首页；
- * 未绑定则带一次性票据跳到绑定手机号页（个人主体无法用手机号快捷登录）。
- */
-const quickWeChatLogin = async () => {
-  if (submitting.value) return;
-  submitting.value = true;
-  uni.showLoading({ title: '微信登录中...', mask: true });
-  try {
-    const code = await getWxCode();
-    const result = await userStore.loginByWeChat(code);
-
-    if (result.needBind) {
-      uni.hideLoading();
-      uni.navigateTo({ url: `/pages/auth/wx-bind?ticket=${result.ticket}` });
-      return;
-    }
-
-    uni.showLoading({ title: '加载数据中...', mask: true });
-    await refreshAfterLogin();
-    uni.hideLoading();
-    uni.showToast({ title: '微信登录成功', icon: 'none' });
-    setTimeout(() => {
-      uni.reLaunch({ url: '/pages/index/index' });
-    }, 600);
-  } catch (e: any) {
-    uni.hideLoading();
-    uni.showToast({ title: e?.message || '微信登录失败', icon: 'none', duration: 2500 });
-  } finally {
-    submitting.value = false;
-  }
+// 微信登录后端已下线，图标仅作展示，点击给出明确提示，不做任何静默失败
+const quickWeChatLogin = () => {
+  uni.showToast({ title: '微信登录暂不支持，请使用手机号登录', icon: 'none', duration: 2500 });
 };
 
 const quickAlipayLogin = () => {

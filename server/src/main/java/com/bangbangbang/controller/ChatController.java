@@ -56,8 +56,10 @@ public class ChatController {
     }
 
     @GetMapping("/messages")
-    public ApiResult<List<ChatMessage>> messages(@RequestParam String sessionId) {
-        return ApiResult.ok(chatService.listMessages(UserContext.require().id(), sessionId));
+    public ApiResult<List<ChatMessage>> messages(@RequestParam String sessionId,
+                                                 @RequestParam(required = false) Long since,
+                                                 @RequestParam(required = false) Integer limit) {
+        return ApiResult.ok(chatService.listMessages(UserContext.require().id(), sessionId, since, limit));
     }
 
     @PostMapping("/messages")

@@ -19,7 +19,6 @@ CREATE TABLE IF NOT EXISTS `sys_user` (
     `gender`        VARCHAR(8)   NOT NULL DEFAULT '女' COMMENT '性别',
     `age`           INT          NOT NULL DEFAULT 0 COMMENT '年龄',
     `phone`         VARCHAR(32)  NOT NULL DEFAULT '' COMMENT '手机号',
-    `openid`        VARCHAR(64)  DEFAULT NULL COMMENT '微信 openid（未绑定时为 NULL）',
     `is_real_name`  TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '是否实名',
     `identity_tag`  VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '身份标签',
     `occupation`    VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '职业',
@@ -30,9 +29,7 @@ CREATE TABLE IF NOT EXISTS `sys_user` (
     `is_logged_in`  TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '登录态',
     `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`),
-    -- 微信登录用；uk_openid 唯一索引允许存在多个 NULL（未绑定微信的用户）
-    UNIQUE KEY `uk_openid` (`openid`)
+    PRIMARY KEY (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '用户信息';
 
 -- ---------------------------------------------------------------------

@@ -8,10 +8,12 @@ import com.bangbangbang.entity.Post;
 import com.bangbangbang.entity.PostComment;
 import com.bangbangbang.mapper.PostCommentMapper;
 import com.bangbangbang.mapper.PostMapper;
+import com.bangbangbang.service.UserDisplayService;
 import lombok.Data;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -25,10 +27,13 @@ public class SquareController {
 
     private final PostMapper postMapper;
     private final PostCommentMapper commentMapper;
+    private final UserDisplayService userDisplayService;
 
-    public SquareController(PostMapper postMapper, PostCommentMapper commentMapper) {
+    public SquareController(PostMapper postMapper, PostCommentMapper commentMapper,
+                            UserDisplayService userDisplayService) {
         this.postMapper = postMapper;
         this.commentMapper = commentMapper;
+        this.userDisplayService = userDisplayService;
     }
 
     @Data
@@ -42,12 +47,85 @@ public class SquareController {
         private String content;
     }
 
-    @GetMapping
-    public ApiResult<List<Post>> list() {
+    /** 分页结果：nextCursor 为 null 表示已经到底 */
+    @Data
+    public static class PostPage {
+        private List<Post> items;
+        private Long nextCursor;
+        private Boolean hasMore;
+    }
+
+    /**
+     * 广场动态分页（游标 = sort_no，不用 offset）。
+     *
+     * sort_no 越小越新（发帖时取「当前最小值 - 1」），所以按它升序遍历就是「新 → 旧」。
+     * 下一页条件是 sort_no > cursor：翻页期间别人发了新帖也不会出现重复或漏项，
+     * 而 offset 分页会因为前面插入了新行整体错位。
+     */
+    @GetMapping("/feed")
+    public ApiResult<PostPage> feed(@RequestParam(required = false) Long cursor,
+                                    @RequestParam(defaultValue = "20") Integer limit,
+                                    @RequestParam(required = false) String keyword) {
         QueryWrapper<Post> wrapper = new QueryWrapper<>();
+        if (cursor != null) {
+            wrapper.gt("sort_no", cursor);
+        }
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            // 搜索在服务端做：只加载了前几页时，前端本地过滤是搜不全的
+            wrapper.like("author_name", keyword.trim());
+        }
         wrapper.orderByAsc("sort_no");
+        return ApiResult.ok(page(wrapper, limit));
+    }
+
+    /** 我发布的动态（「我的-我的动态」用，不受广场分页影响） */
+    @GetMapping("/mine")
+    public ApiResult<PostPage> mine(@RequestParam(required = false) Long cursor,
+                                    @RequestParam(defaultValue = "20") Integer limit) {
+        String meId = UserContext.require().id();
+        QueryWrapper<Post> wrapper = new QueryWrapper<>();
+        wrapper.eq("author_id", meId);
+        if (cursor != null) {
+            wrapper.gt("sort_no", cursor);
+        }
+        wrapper.orderByAsc("sort_no");
+        return ApiResult.ok(page(wrapper, limit));
+    }
+
+    /** 单条动态：评论页直接按 id 打开时用，不依赖列表是否已经加载过这一条 */
+    @GetMapping("/{id}")
+    public ApiResult<Post> detail(@PathVariable String id) {
+        UserContext.require();
+        Post post = postMapper.selectById(id);
+        if (post == null) {
+            throw BizException.of("动态不存在");
+        }
+        userDisplayService.fillPosts(Collections.singletonList(post));
+        return ApiResult.ok(post);
+    }
+
+    /** 多取一条判断有没有下一页，避免额外的 count 查询 */
+    private PostPage page(QueryWrapper<Post> wrapper, Integer limit) {
+        int size = limit == null ? 20 : Math.max(1, Math.min(limit, 50));
+        wrapper.last("LIMIT " + (size + 1));
         List<Post> list = postMapper.selectList(wrapper);
-        return ApiResult.ok(list == null ? new ArrayList<>() : list);
+        if (list == null) {
+            list = new ArrayList<>();
+        }
+        boolean hasMore = list.size() > size;
+        if (hasMore) {
+            list = new ArrayList<>(list.subList(0, size));
+        }
+        userDisplayService.fillPosts(list);
+
+        PostPage result = new PostPage();
+        result.setItems(list);
+        // sort_no 为空说明数据异常，直接按「没有更多」处理，避免前端反复请求同一页
+        Long last = list.isEmpty() ? null : list.get(list.size() - 1).getSortNo();
+        boolean canContinue = hasMore && last != null;
+        result.setHasMore(canContinue);
+        result.setNextCursor(canContinue ? last : null);
+        return result;
     }
 
     @PostMapping
@@ -116,7 +194,11 @@ public class SquareController {
         QueryWrapper<PostComment> wrapper = new QueryWrapper<>();
         wrapper.eq("post_id", id).orderByAsc("sort_no");
         List<PostComment> list = commentMapper.selectList(wrapper);
-        return ApiResult.ok(list == null ? new ArrayList<>() : list);
+        if (list == null) {
+            list = new ArrayList<>();
+        }
+        userDisplayService.fillComments(list);
+        return ApiResult.ok(list);
     }
 
     @PostMapping("/{id}/comments")

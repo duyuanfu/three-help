@@ -20,7 +20,8 @@ export const bootstrapStores = (): void => {
   useUserStore().initUser();
   useOrderStore().initOrders();
   useChatStore().initChat();
-  useSquareStore().initSquare();
+  // 广场动态/评论不在快照里，这里只清状态，真正拉取由页面 onShow 触发
+  useSquareStore().resetSquare();
   useMallStore().initMall();
 };
 

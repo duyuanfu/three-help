@@ -145,14 +145,20 @@ const isFriend = (authorName: string) => {
 onLoad((options) => {
   if (options && options.postId) {
     postId.value = options.postId;
-    const found = squareStore.posts.find((p) => p.id === options.postId);
-    if (found) {
-      post.value.authorId = found.authorId;
-      post.value.authorName = found.authorName;
-      post.value.authorAvatar = found.authorAvatar;
-      post.value.timeAgo = found.timeAgo;
-      post.value.content = found.content;
-    }
+    // 列表里已加载的直接用；没有就按 id 拉一次详情
+    // （从「我的动态」点进来、或广场已经翻过这一条时，列表里可能没有它）
+    squareStore
+      .fetchPost(options.postId)
+      .then((found) => {
+        if (!found) return;
+        post.value.authorId = found.authorId;
+        post.value.authorName = found.authorName;
+        post.value.authorAvatar = found.authorAvatar;
+        post.value.timeAgo = found.timeAgo;
+        post.value.content = found.content;
+      })
+      .catch((e) => console.error('[comment] 动态详情加载失败', e));
+
     // 从后端拉取该动态的真实评论
     squareStore.loadComments(options.postId).catch((e) => {
       console.error('[comment] 评论加载失败', e);

@@ -73,9 +73,24 @@ import { ref, computed } from 'vue';
 import { useUserStore } from '../../stores/user';
 import { useSettingStore } from '../../stores/setting';
 import { chooseAvatar, avatarSrc, LOCAL_DEFAULT_AVATAR } from '../../utils/avatar';
+import { refreshAll } from '../../utils/session';
 
 const userStore = useUserStore();
 const settingStore = useSettingStore();
+
+/**
+ * 姓名、头像这类字段在动态/评论/订单/通讯录里都存了一份快照，
+ * 保存成功后必须把全量数据重新拉一遍，否则回到广场还是旧名字 ——
+ * 服务端已经同步过了，这里只是让本机的内存快照跟上。
+ */
+const syncProfileDisplay = async () => {
+  try {
+    await refreshAll();
+  } catch (e) {
+    // 拉取失败不影响已经保存成功的资料，下次进页面或下拉刷新会补上
+    console.error('[profile] 资料同步失败', e);
+  }
+};
 
 /** 头像统一走 avatarUrl（相对地址转完整地址），加载失败再退回包内默认图 */
 const avatarFailed = ref(false);
@@ -112,6 +127,9 @@ const changeAvatar = () => {
         icon: savedOk ? 'success' : 'none',
         duration: savedOk ? 1500 : 2200
       });
+      if (savedOk) {
+        await syncProfileDisplay();
+      }
     }
   });
 };
@@ -143,10 +161,14 @@ const editField = (key: string, label: string, currentVal: string) => {
     editable: true,
     content: currentVal,
     placeholderText: `请输入${label}`,
-    success: (res) => {
+    success: async (res) => {
       if (res.confirm && res.content) {
-        userStore.updateProfile({ [key]: res.content });
+        const saved = await userStore.updateProfile({ [key]: res.content });
         uni.showToast({ title: '已保存', icon: 'success' });
+        // 只有姓名会影响其它页面的展示，改职业/地址不必重拉数据
+        if (saved && key === 'name') {
+          await syncProfileDisplay();
+        }
       }
     }
   });

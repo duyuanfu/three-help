@@ -44,10 +44,6 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/api/auth/login",
                         "/api/auth/register",
-                        // 微信登录时用户一定还没登录，这两个接口必须在白名单里，
-                        // 接口内部靠一次性票据（bind 时）和微信侧 code 校验（login 时）保证安全
-                        "/api/auth/wx-login",
-                        "/api/auth/wx-bind",
                         "/api/health"
                 );
     }

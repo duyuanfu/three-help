@@ -1,5 +1,6 @@
 package com.bangbangbang.config;
 
+import com.bangbangbang.common.NameInitial;
 import com.bangbangbang.service.PasswordService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationRunner;
@@ -46,6 +47,8 @@ public class DataMigration implements ApplicationRunner {
             migrateAdmins();
             migrateOwners();
             migrateSessions();
+            syncProfileSnapshots();
+            syncPostCommentCounts();
             log.info("[迁移] 数据结构与数据检查完成");
         } catch (Exception e) {
             log.error("[迁移] 执行失败", e);
@@ -66,8 +69,6 @@ public class DataMigration implements ApplicationRunner {
         addColumn("address", "owner_id", "VARCHAR(64) DEFAULT NULL COMMENT '归属用户'");
         addColumn("exchange_order", "owner_id", "VARCHAR(64) DEFAULT NULL COMMENT '归属用户'");
         addColumn("sys_user", "is_admin", "TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否管理员'");
-        addColumn("sys_user", "openid", "VARCHAR(64) DEFAULT NULL COMMENT '微信openid'");
-        addUniqueIndex("sys_user", "uk_openid", "openid");
     }
 
     private void migrateTokensTable() {
@@ -239,6 +240,85 @@ public class DataMigration implements ApplicationRunner {
         jdbc.update("DELETE FROM chat_session WHERE user_a_id IS NULL");
     }
 
+    /**
+     * 用 sys_user 里的最新资料，把各表冗余的姓名/头像/标签全量刷新一遍。
+     *
+     * 这些字段是写入时的快照，用户改过资料之后就永久停在旧值上，
+     * 于是同一个人会在「全部动态」显示旧名、在「私信」显示新名。
+     * 用户资料变更时 UserProfileSyncService 会做增量同步，这里负责修历史存量，
+     * 启动时执行一次、幂等，数据量很小（百行级），不会影响启动速度。
+     */
+    private void syncProfileSnapshots() {
+        // 已经是同一个人的展示字段，空值不覆盖（避免把已有的头像抹掉）
+        int post = jdbc.update("UPDATE post p JOIN sys_user u ON u.id = p.author_id " +
+                "SET p.author_name = IF(u.name = '', p.author_name, u.name), " +
+                "    p.author_avatar = IF(u.avatar = '', p.author_avatar, u.avatar), " +
+                "    p.author_tag = u.identity_tag");
+
+        int comment = jdbc.update("UPDATE post_comment c JOIN sys_user u ON u.id = c.author_id " +
+                "SET c.user_name = IF(u.name = '', c.user_name, u.name), " +
+                "    c.avatar = IF(u.avatar = '', c.avatar, u.avatar)");
+
+        int creator = jdbc.update("UPDATE help_order o JOIN sys_user u ON u.id = o.creator_id " +
+                "SET o.creator_name = IF(u.name = '', o.creator_name, u.name), " +
+                "    o.creator_avatar = IF(u.avatar = '', o.creator_avatar, u.avatar), " +
+                "    o.creator_tag = u.identity_tag");
+
+        int helper = jdbc.update("UPDATE help_order o JOIN sys_user u ON u.id = o.helper_id " +
+                "SET o.helper_name = IF(u.name = '', o.helper_name, u.name), " +
+                "    o.helper_avatar = IF(u.avatar = '', o.helper_avatar, u.avatar), " +
+                "    o.helper_tag = u.identity_tag, " +
+                "    o.helper_phone = IF(u.phone = '', o.helper_phone, u.phone)");
+
+        // 会话列表本身是实时查用户，这两个字段只是兼容旧结构，一并刷成最新值
+        int session = jdbc.update("UPDATE chat_session s JOIN sys_user u ON u.id = s.target_user_id " +
+                "SET s.target_user_name = IF(u.name = '', s.target_user_name, u.name), " +
+                "    s.target_user_avatar = IF(u.avatar = '', s.target_user_avatar, u.avatar), " +
+                "    s.target_user_tag = u.identity_tag");
+
+        // 通讯录只同步「已关联真实账号」的条目；手工录入的联系人保留用户自己填的名字
+        int contact = jdbc.update("UPDATE contact c JOIN sys_user u ON u.id = c.target_user_id " +
+                "SET c.name = IF(u.name = '', c.name, u.name), " +
+                "    c.avatar = IF(u.avatar = '', c.avatar, u.avatar), " +
+                "    c.tag = u.identity_tag, " +
+                "    c.phone = IF(u.phone = '', c.phone, u.phone)");
+        refreshContactLetters();
+
+        log.info("[迁移] 用户资料快照回填：动态 {}、评论 {}、订单发布人 {}、订单接单人 {}、会话 {}、联系人 {}",
+                post, comment, creator, helper, session, contact);
+    }
+
+    /**
+     * 用真实评论数校准 post.comment_count。
+     *
+     * 广场改成游标分页后，前端不再把评论全量读进内存、也就没法在本地数一遍了，
+     * 卡片上的「评论 N」直接取这个字段。历史数据里如果留着早期种子数据的假数字，
+     * 会出现「显示 12 条评论、点进去一条都没有」。启动时对一次账，幂等。
+     */
+    private void syncPostCommentCounts() {
+        int fixed = jdbc.update("UPDATE post p " +
+                "LEFT JOIN (SELECT post_id, COUNT(*) AS c FROM post_comment GROUP BY post_id) t " +
+                "  ON t.post_id = p.id " +
+                "SET p.comment_count = IFNULL(t.c, 0) " +
+                // 用 <=> 而不是 <>：MySQL 里 NULL <> 0 结果是 NULL，等于不漏也不修
+                "WHERE NOT (p.comment_count <=> IFNULL(t.c, 0))");
+        if (fixed > 0) {
+            log.info("[迁移] 动态评论数校准：修正 {} 条", fixed);
+        }
+    }
+
+    /** 姓名变了，通讯录的首字母分组也要跟着变（字母映射在 Java 里，SQL 算不了） */
+    private void refreshContactLetters() {
+        List<java.util.Map<String, Object>> rows = jdbc.queryForList(
+                "SELECT id, name FROM contact WHERE target_user_id IS NOT NULL AND target_user_id <> ''");
+        for (java.util.Map<String, Object> row : rows) {
+            Object id = row.get("id");
+            Object name = row.get("name");
+            jdbc.update("UPDATE contact SET letter = ? WHERE id = ?",
+                    NameInitial.of(name == null ? "" : String.valueOf(name)), id);
+        }
+    }
+
     /* ------------------------------------------------------------------ */
 
     private String queryOneString(String sql, Object... args) {
@@ -262,30 +342,6 @@ public class DataMigration implements ApplicationRunner {
         }
         jdbc.execute("ALTER TABLE `" + table + "` ADD COLUMN `" + column + "` " + definition);
         log.info("[迁移] {}.{} 已新增", table, column);
-    }
-
-    /** 幂等新增唯一索引（索引已存在时跳过） */
-    private void addUniqueIndex(String table, String indexName, String column) {
-        Integer tableExists = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",
-                Integer.class, table);
-        if (tableExists == null || tableExists == 0) {
-            return;
-        }
-        Integer count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() " +
-                        "AND TABLE_NAME = ? AND INDEX_NAME = ?",
-                Integer.class, table, indexName);
-        if (count != null && count > 0) {
-            return;
-        }
-        try {
-            jdbc.execute("ALTER TABLE `" + table + "` ADD UNIQUE KEY `" + indexName + "` (`" + column + "`)");
-            log.info("[迁移] {}.{} 唯一索引已新增", table, indexName);
-        } catch (Exception e) {
-            // 已有重复值时建索引会失败；不影响启动，登录时按查询到的第一条兜底
-            log.warn("[迁移] {}.{} 唯一索引创建失败：{}", table, indexName, e.getMessage());
-        }
     }
 
     private String min(String a, String b) {

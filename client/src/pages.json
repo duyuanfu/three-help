@@ -204,13 +204,6 @@
       }
     },
     {
-      "path": "pages/auth/wx-bind",
-      "style": {
-        "navigationBarTitleText": "绑定手机号",
-        "navigationStyle": "custom"
-      }
-    },
-    {
       "path": "pages/auth/register",
       "style": {
         "navigationBarTitleText": "注册",

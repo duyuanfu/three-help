@@ -52,8 +52,13 @@
       <text class="section-title">全部动态</text>
     </view>
 
-    <!-- 动态帖子滚动流 -->
-    <scroll-view scroll-y class="posts-scroll-list">
+    <!-- 动态帖子滚动流（下拉到底自动加载下一页） -->
+    <scroll-view
+      scroll-y
+      class="posts-scroll-list"
+      :lower-threshold="120"
+      @scrolltolower="handleLoadMore"
+    >
       <view 
         v-for="post in postList" 
         :key="post.id" 
@@ -91,7 +96,7 @@
         <!-- 底部互动操作行 (评论 / 删除 / 点赞) -->
         <view class="post-footer-row">
           <view class="comment-trigger" @tap="handleComment(post)">
-            <text class="comment-count-text">评论 {{ squareStore.commentCountOf(post.id) }}</text>
+            <text class="comment-count-text">评论 {{ post.commentCount || 0 }}</text>
           </view>
           <view class="action-right">
             <text 
@@ -106,7 +111,13 @@
         </view>
       </view>
 
-      <view class="elder-no-more">
+      <view v-if="squareStore.feedLoading" class="feed-tip">
+        <text>加载中...</text>
+      </view>
+      <view v-else-if="squareStore.feedHasMore" class="feed-tip">
+        <text>上拉加载更多</text>
+      </view>
+      <view v-else class="elder-no-more">
         <text>——暂无更多——</text>
       </view>
     </scroll-view>
@@ -114,7 +125,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onUnmounted, watch } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import { useSquareStore } from '../../stores/square';
 import { useChatStore } from '../../stores/chat';
 import { useSettingStore } from '../../stores/setting';
@@ -127,8 +139,8 @@ const squareStore = useSquareStore();
 const chatStore = useChatStore();
 const settingStore = useSettingStore();
 
-// 下拉刷新：重新拉取全量数据（五个 tab 页统一行为）
-usePullRefresh();
+// 下拉刷新会重置 store（refreshAll 里 resetSquare），所以刷完要自己重新拉第一页
+usePullRefresh(() => squareStore.loadFeed(true));
 
 const userStore = useUserStore();
 
@@ -139,6 +151,36 @@ const pageStyle = computed(() => ({
 const postList = computed(() => {
   return squareStore.filteredPosts;
 });
+
+/** 首次进入 / 重新登录后拉第一页；已有数据就不再重复请求 */
+onShow(() => {
+  if (squareStore.feedLoaded) return;
+  squareStore.loadFeed(true).catch((e: any) => {
+    uni.showToast({ title: e?.message || '动态加载失败', icon: 'none', duration: 2200 });
+  });
+});
+
+/** 搜索改成服务端过滤：只加载了几页时前端本地过滤是搜不全的 */
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
+watch(
+  () => squareStore.searchKeyword,
+  () => {
+    if (searchTimer) clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      squareStore.loadFeed(true).catch(() => {
+        /* 失败已在请求层提示，保留当前列表 */
+      });
+    }, 400);
+  }
+);
+
+onUnmounted(() => {
+  if (searchTimer) clearTimeout(searchTimer);
+});
+
+const handleLoadMore = () => {
+  squareStore.loadMoreFeed().catch((e) => console.error('[square] 加载下一页失败', e));
+};
 
 const goToMall = () => {
   uni.navigateTo({
@@ -355,6 +397,15 @@ const handleDelete = (postId: string) => {
 
 .posts-scroll-list {
   flex: 1;
+}
+
+/* 翻页提示：与 .elder-no-more 同一视觉层级 */
+.feed-tip {
+  text-align: center;
+  padding: 24rpx 0 40rpx 0;
+  font-size: calc(28rpx * var(--font-scale, 1));
+  color: #8F959E;
+  font-weight: 600;
 }
 
 /* 动态卡片 (原型白底圆角) */

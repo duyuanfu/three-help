@@ -114,6 +114,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useUserStore } from '../../stores/user';
+import { refreshAll } from '../../utils/session';
 import { useSettingStore } from '../../stores/setting';
 import { usePullRefresh } from '../../composables/usePullRefresh';
 import { chooseAvatar, avatarSrc, LOCAL_DEFAULT_AVATAR } from '../../utils/avatar';
@@ -158,6 +159,10 @@ const handleChangeAvatar = () => {
           title: ok ? '已恢复头像' : '保存失败，请重试',
           icon: ok ? 'success' : 'none'
         });
+        if (ok) {
+          // 头像在动态/评论/订单里都存了快照，重拉一次让各处一起变
+          await refreshAll().catch((e) => console.error('[my] 资料同步失败', e));
+        }
         return;
       }
 
@@ -171,6 +176,9 @@ const handleChangeAvatar = () => {
           title: ok ? '头像已更新' : '保存失败，请重试',
           icon: ok ? 'success' : 'none'
         });
+        if (ok) {
+          await refreshAll().catch((e) => console.error('[my] 资料同步失败', e));
+        }
       }
     }
   });

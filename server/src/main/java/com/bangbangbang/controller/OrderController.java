@@ -8,6 +8,7 @@ import com.bangbangbang.entity.HelpOrder;
 import com.bangbangbang.entity.SysUser;
 import com.bangbangbang.mapper.HelpOrderMapper;
 import com.bangbangbang.mapper.SysUserMapper;
+import com.bangbangbang.service.UserDisplayService;
 import lombok.Data;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,10 +33,13 @@ public class OrderController {
 
     private final HelpOrderMapper orderMapper;
     private final SysUserMapper userMapper;
+    private final UserDisplayService userDisplayService;
 
-    public OrderController(HelpOrderMapper orderMapper, SysUserMapper userMapper) {
+    public OrderController(HelpOrderMapper orderMapper, SysUserMapper userMapper,
+                           UserDisplayService userDisplayService) {
         this.orderMapper = orderMapper;
         this.userMapper = userMapper;
+        this.userDisplayService = userDisplayService;
     }
 
     @Data
@@ -177,6 +181,10 @@ public class OrderController {
 
     /** 补一个 isMine / isHelper 标记，前端按钮显隐可直接用 */
     private Map<String, Object> toView(HelpOrder order, String userId) {
+        // 发布人/接单人的姓名、头像在 order 表里是下单、接单时的快照，
+        // 用户后来改了资料就会和「我的」「私信」里显示的不一致，这里统一校准成最新值。
+        userDisplayService.fillOrder(order);
+
         Map<String, Object> view = new LinkedHashMap<>();
         view.put("id", order.getId());
         view.put("creatorId", order.getCreatorId());

@@ -3,6 +3,7 @@ package com.bangbangbang.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.bangbangbang.common.ApiResult;
 import com.bangbangbang.common.BizException;
+import com.bangbangbang.common.NameInitial;
 import com.bangbangbang.common.UserContext;
 import com.bangbangbang.entity.Contact;
 import com.bangbangbang.entity.SysUser;
@@ -92,7 +93,7 @@ public class ContactController {
         contact.setTag(target != null ? target.getIdentityTag() : req.getTag());
         contact.setTargetUserId(target == null ? null : target.getId());
         contact.setIsFriend(true);
-        contact.setLetter(firstLetter(contact.getName()));
+        contact.setLetter(NameInitial.of(contact.getName()));
         contact.setSortNo(nextSortNo(me.id()));
         contactMapper.insert(contact);
         return ApiResult.ok(contact);
@@ -124,7 +125,7 @@ public class ContactController {
         contact.setTag(target.getIdentityTag());
         contact.setTargetUserId(target.getId());
         contact.setIsFriend(true);
-        contact.setLetter(firstLetter(target.getName()));
+        contact.setLetter(NameInitial.of(target.getName()));
         contact.setSortNo(nextSortNo(me.id()));
         contactMapper.insert(contact);
         return contact;
@@ -163,23 +164,4 @@ public class ContactController {
         return 1L;
     }
 
-    /** 姓氏首字母（常见姓氏映射，未收录的按 A 处理） */
-    private String firstLetter(String name) {
-        if (name == null || name.isEmpty()) {
-            return "A";
-        }
-        String[][] table = {
-                {"李", "L"}, {"刘", "L"}, {"蓝", "L"}, {"林", "L"}, {"罗", "L"},
-                {"马", "M"}, {"王", "W"}, {"吴", "W"}, {"赵", "Z"}, {"张", "Z"}, {"周", "Z"}, {"郑", "Z"},
-                {"陈", "C"}, {"曹", "C"}, {"杨", "Y"}, {"姚", "Y"}, {"孙", "S"}, {"沈", "S"},
-                {"黄", "H"}, {"何", "H"}, {"胡", "H"}, {"郭", "G"}, {"高", "G"}, {"徐", "X"}, {"谢", "X"}
-        };
-        String first = name.substring(0, 1);
-        for (String[] row : table) {
-            if (row[0].equals(first)) {
-                return row[1];
-            }
-        }
-        return "A";
-    }
 }

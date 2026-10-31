@@ -82,12 +82,14 @@ export const useChatStore = defineStore('chat', {
     totalUnread: (state) => state.sessions.reduce((sum, s) => sum + (s.unreadCount || 0), 0)
   },
   actions: {
-    /** 启动时从后端快照读取（bootstrap 已按当前用户过滤） */
+    /** 启动时从后端快照读取通讯录与会话（消息不落快照，进聊天页时按会话拉取） */
     initChat() {
       try {
         this.contacts = TABLES.contacts.all();
         this.sessions = TABLES.sessions.all();
-        this.messages = TABLES.messages.all();
+        // 消息体量随聊天记录无限增长，不再整表塞进启动快照，
+        // 每次打开会话由 loadMessages 走 /api/chat/messages 拉取
+        this.messages = {};
       } catch (e) {
         console.error('[chat] 初始化失败', e);
       }
@@ -138,11 +140,39 @@ export const useChatStore = defineStore('chat', {
       return session;
     },
 
-    /** 拉取某个会话的消息（进入聊天页 + 轮询时调用） */
+    /**
+     * 拉取某个会话的消息（进入聊天页时调用）。
+     * 服务端只返回最近若干条，历史不会全量下发。
+     */
     async loadMessages(sessionId: string) {
       const list = await apiListMessages(sessionId);
       this.messages[sessionId] = list;
       return list;
+    },
+
+    /**
+     * 轮询增量：只取比本地最后一条更新的消息。
+     *
+     * 早期版本每次轮询都拉整段历史（3 秒一次），会话越长压越大；
+     * 带 since 之后每次只传回真正新增的几条。
+     * 返回新增条数，供页面判断是否需要滚动到底、标记已读。
+     */
+    async pollNewMessages(sessionId: string): Promise<number> {
+      const current = this.messages[sessionId] || [];
+      const last = current.length ? current[current.length - 1].timestamp : undefined;
+      if (last === undefined || last === null) {
+        // 本地还没有数据，等同于首次加载
+        const list = await this.loadMessages(sessionId);
+        return list.length;
+      }
+      const list = await apiListMessages(sessionId, last);
+      if (!list.length) return 0;
+      const seen = new Set(current.map((m) => m.id));
+      const fresh = list.filter((m) => !seen.has(m.id));
+      if (fresh.length) {
+        this.messages[sessionId] = current.concat(fresh);
+      }
+      return fresh.length;
     },
 
     /** 标记已读 */

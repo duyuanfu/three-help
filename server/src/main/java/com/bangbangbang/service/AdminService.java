@@ -134,9 +134,11 @@ public class AdminService {
     }
 
     private final JdbcTemplate jdbc;
+    private final UserProfileSyncService profileSyncService;
 
-    public AdminService(JdbcTemplate jdbc) {
+    public AdminService(JdbcTemplate jdbc, UserProfileSyncService profileSyncService) {
         this.jdbc = jdbc;
+        this.profileSyncService = profileSyncService;
     }
 
     /* ------------------------------------------------------------------ */
@@ -271,6 +273,10 @@ public class AdminService {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("id", id);
         result.put("updated", n);
+        // 管理后台改了用户资料同样要扩散到各表快照，否则用户会发现「后台改了名、动态上还是旧名」
+        if ("sys_user".equals(meta.table())) {
+            profileSyncService.syncByUserId(id);
+        }
         return result;
     }
 

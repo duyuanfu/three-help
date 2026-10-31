@@ -111,7 +111,9 @@ curl http://127.0.0.1:8090/api/health
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | `/api/health` | 健康检查 |
-| GET | `/api/bootstrap` | **一次性拉取全部 13 张表数据**（前端启动时调用） |
+| GET | `/api/bootstrap` | **一次性拉取 10 张表数据**（前端启动时调用；只含按用户过滤、体量有上限的表，见第九节 4） |
+| GET | `/api/posts/feed?cursor=&limit=&keyword=` | 广场动态游标分页（不随数据量增长，见第九节 4.1） |
+| GET | `/api/posts/mine?cursor=&limit=` | 我发布的动态（独立分页） |
 
 ### 通用表接口
 
@@ -157,19 +159,21 @@ curl -X POST http://127.0.0.1:8090/api/tables/orders/ord_004 \
 |---|---|---|
 | POST | `/api/auth/register` | 注册（PBKDF2 入库，返回 token） |
 | POST | `/api/auth/login` | 登录 |
-| POST | `/api/auth/wx-login` | 微信登录（code 换 openid；未绑定时返回 `needBind` + 票据） |
-| POST | `/api/auth/wx-bind` | 微信登录后绑定手机号（未注册即注册，已注册需验密码） |
 | POST | `/api/auth/logout` | 注销令牌 |
 | GET | `/api/auth/me` | 当前用户（含 `isAdmin`） |
 | POST | `/api/upload?kind=avatar\|image\|voice` | 上传文件，返回 `/uploads/...` |
 | GET/POST | `/api/orders` | 订单列表（`scope=mine\|pending`）/ 下单 |
 | POST | `/api/orders/{id}/take\|complete\|cancel` | 接单 / 完成 / 取消 |
 | GET/POST | `/api/sessions` | 会话列表 / 打开或创建会话 |
-| GET/POST | `/api/messages` | 消息列表 / 发送消息 |
+| GET/POST | `/api/messages` | 消息列表（`sessionId` + 可选 `since` 增量、`limit` 默认 200）/ 发送消息 |
 | GET/POST/DELETE | `/api/contacts` | 通讯录 |
-| GET/POST/DELETE | `/api/posts` | 广场动态 |
+| GET | `/api/posts/feed` | 广场动态，游标分页（`cursor` / `limit` / `keyword`） |
+| GET | `/api/posts/mine` | 我发布的动态，游标分页 |
+| GET | `/api/posts/{id}` | 单条动态详情 |
+| POST | `/api/posts` | 发动态（author 取当前登录用户） |
+| DELETE | `/api/posts/{id}` | 删动态（连同其评论，仅作者本人） |
 | POST | `/api/posts/{id}/like` | 点赞 |
-| GET/POST | `/api/posts/{id}/comments` | 评论 |
+| GET/POST | `/api/posts/{id}/comments` | 评论（读取该帖全部评论） |
 
 ### 管理后台接口
 
@@ -257,8 +261,6 @@ mysql -u root -p bbb < src/main/resources/db/reset.sql
 |---|---|
 | `POST /api/auth/register` | 姓名/年龄/手机号/密码 → 建账号并返回 token |
 | `POST /api/auth/login` | 手机号 + 密码 → token + 用户资料 |
-| `POST /api/auth/wx-login` | 微信 code → 已绑定则直接 token，未绑定则返回票据 |
-| `POST /api/auth/wx-bind` | 票据 + 手机号 + 密码 → 绑定并返回 token |
 | `POST /api/auth/logout` | 令牌作废 |
 | `GET /api/auth/me` | 校验当前令牌 |
 
@@ -297,7 +299,7 @@ mysql -u root -p bbb < src/main/resources/db/reset.sql
 | `POST /api/orders/{id}/complete` | 完成，仅订单双方可操作 |
 | `POST /api/orders/{id}/cancel` | 取消，仅发布者 |
 | `POST /api/sessions` | 与某人建立/获取会话（一对用户只有一条会话） |
-| `GET /api/messages?sessionId=` | 拉取消息 |
+| `GET /api/messages?sessionId=&since=` | 拉取消息；带 `since` 只返回更新的（轮询用），不带则返回最近 200 条 |
 | `POST /api/messages` | 发消息，sender 取当前登录用户 |
 | `POST /api/sessions/{id}/read` | 标记已读 |
 | `POST /api/contacts` | 加联系人（可按手机号或 `targetUserId`） |
@@ -305,25 +307,82 @@ mysql -u root -p bbb < src/main/resources/db/reset.sql
 | `POST /api/posts/{id}/comments` | 评论 |
 | `POST /api/posts/{id}/like` | 点赞 |
 
-### 4. 数据隔离
+### 4. 数据隔离与「不随数据量增长」的边界
 
-`/api/bootstrap` 按登录用户返回：订单只含「我发布的 / 我接的 / 待接单」，
-通讯录、地址、购物车、兑换单按 `owner_id`（购物车用 `user_id`）过滤，
-广场动态与商品是全局公开数据。
+小程序把数据一次性读进内存快照（`client/src/utils/db.ts`），因此
+`/api/bootstrap` 必须是**体积有上限**的请求：它是冷启动时阻塞整个 App 的
+单个请求（前端 15s 超时），一旦体积随使用量增长，最终会在某天直接打不开，
+而不是慢慢变卡。
+
+**快照里只放「按登录用户过滤、体量有上限」的 10 张表**：
+
+| 分类 | 表 | 过滤方式 |
+| --- | --- | --- |
+| 账号 | `user` `setting` | 单行 |
+| 我的业务 | `orders` `exchangeOrders` `contacts` `sessions` `addresses` `cart` | 按 `owner_id` / `user_id`，只含自己的 |
+| 全局小表 | `helpers` `goods` | 全表，但由运营维护、规模固定 |
+
+**三张只增不减的表不在快照里**，各有专用接口：
+
+| 数据 | 接口 | 边界 |
+| --- | --- | --- |
+| 广场动态 | `GET /api/posts/feed?cursor=&limit=&keyword=` | 游标分页，每页默认 20、上限 50 |
+| 我的动态 | `GET /api/posts/mine?cursor=&limit=` | 独立分页，不受广场翻到第几页影响 |
+| 动态评论 | `GET /api/posts/{id}/comments` | 单帖全部评论，进评论页才拉 |
+| 聊天消息 | `GET /api/chat/messages?sessionId=&since=&limit=` | 默认最近 200 条；轮询带 `since` 只传增量 |
+
+### 4.1 为什么用游标而不是 offset
+
+动态的 `sort_no` 在发布时取「当前最小值 − 1」，**越小越新**，
+所以按它升序遍历就是「新 → 旧」，下一页条件是 `sort_no > cursor`。
+
+用 offset 分页的话，翻页期间只要有人发了新帖，整个列表就会后移一位，
+用户会看到重复条目、同时漏掉一条。游标没有这个问题。
+
+前端对应实现：`stores/square.ts`（`feedCursor` / `feedHasMore`）、
+`pages/square/index.vue`（`scrolltolower` 自动加载下一页）。
 
 ### 5. 启动时的自动迁移
 
 `config/DataMigration.java` 每次启动幂等执行：
 补 `password_hash`、`user_token` 表、各表的 `owner_id`、会话双方字段；
 把 `/static/avatars/xxx.jpg` 的头像地址迁到 `/uploads/default/xxx.jpg`；
-规范化历史会话 ID，并清理种子脚本重复插入的旧会话。
+规范化历史会话 ID，并清理种子脚本重复插入的旧会话；
+最后按 `sys_user` 把所有冗余的用户展示字段（见 6.1）全量回填一遍。
 
-### 6. 已知未接入项（不伪造）
+### 6. 用户资料与展示信息的一致性
+
+动态、评论、订单、通讯录在写入时把**当时的**姓名 / 头像 / 身份标签一起存了一份快照
+（`post.author_name`、`post_comment.user_name`、`help_order.creator_name`、
+`contact.name` 等），好处是列表查询不用 JOIN，代价是用户改了资料之后这些字段不会自己变。
+私信会话列表是**实时查** `sys_user` 的，于是就出现了「同一个人在广场显示旧名、在私信显示新名」。
+
+现在以 `sys_user` 为唯一事实来源，三层保证一致：
+
+| 层 | 位置 | 作用 |
+| --- | --- | --- |
+| 写时同步 | `service/UserProfileSyncService` | 资料一变更（个人资料、头像、实名、后台改用户）就用 `UPDATE` 扩散到 6 张表 |
+| 读时校准 | `service/UserDisplayService` | `/api/posts/feed`、`/api/posts/mine`、`/api/posts/{id}`、`/api/posts/{id}/comments`、`/api/orders`、`/api/bootstrap` 返回前按账号最新值覆盖，批量一次 `IN` 查询 |
+| 启动回填 | `DataMigration.syncProfileSnapshots` | 修历史脏数据（管理员直接改过库也能纠正） |
+
+覆盖范围：
+
+- `post.author_name / author_avatar / author_tag`
+- `post_comment.user_name / avatar`
+- `help_order.creator_*`（发布人）与 `helper_*`（接单人，含电话）
+- `chat_session.target_user_*`（兼容字段；列表接口本身实时查账号）
+- `contact.name / avatar / tag / phone / letter`（**仅** 已关联真实账号的条目，手工录入的联系人保留自己填的名字）
+
+前端侧：改姓名 / 头像 / 实名成功后调用一次 `refreshAll()`，
+把内存快照里的动态、评论、订单、通讯录一起刷新，否则界面要等下次下拉刷新才更新。
+
+注意：这些字段只能由服务端同步。前端提交资料时如果允许带 `authorName` 之类的字段，
+客户端漏传一次就会永久不一致，所以写入接口一律忽略客户端传的身份字段。
+
+### 7. 已知未接入项（不伪造）
 
 支付宝一键登录、短信验证码、语音通话、视频通话、文件发送 —— 界面上直接提示「暂未接入」，
 不再用假数据模拟成功。
-
-微信登录已接入（openid 登录 + 绑定手机号），配置与限制见第十一节 12 小节。
 
 ---
 
@@ -962,82 +1021,4 @@ firewall-cmd --reload
 - [ ] MySQL 端口不要对公网开放，只允许本机或 Docker 内网访问
 - [ ] 确认 `https://api.example.com/api/health` 从外网可访问，`http://` 会 301 跳到 443
 - [ ] 备份任务已加进 crontab，并**实际恢复过一次**（没验证过的备份不算备份）
-- [ ] **`WX_SECRET` 只存在于服务器 `.env`**：连同 `.env` 一起 `chmod 600`，不要提交、不要下发前端
 
-### 12. 微信登录（openid 登录 + 绑定手机号）
-
-个人主体的小程序**不能**用「手机号快捷登录」（`getPhoneNumber` 要求已认证的非个人主体），
-所以这里的方案是：**微信授权拿到 openid → 再手动绑定手机号**，一次绑定之后即可微信一键登录。
-
-#### 12.1 服务端配置
-
-`.env` 里加两行（`WX_APPID` 与 `client/src/manifest.json` 的 `mp-weixin.appid` 必须一致）：
-
-```ini
-WX_APPID=wx390f4498c4e0d317
-WX_SECRET=你的AppSecret
-```
-
-```bash
-docker compose up -d --build
-docker exec bbb-server env | grep WX_          # 两行都有输出才算注入成功
-```
-
-AppSecret 只在服务端使用，用于调 `jscode2session` 换 openid；**绝不能写进小程序代码**——
-小程序包可以被解出来，Secret 一旦泄露，别人能用你的小程序身份换 openid。
-
-#### 12.2 登录流程
-
-```
-小程序 uni.login → code
-      ↓ POST /api/auth/wx-login
-服务端 jscode2session（AppID + Secret + code）→ openid
-      ↓
-   openid 已绑定账号 ──── 是 ──→ 直接签发令牌，进首页
-      ↓ 否
-返回 needBind=true + 一次性票据（5 分钟、单次使用）
-      ↓ 跳 pages/auth/wx-bind
-用户填手机号 + 密码
-      ↓ POST /api/auth/wx-bind
-手机号未注册 → 直接创建账号并绑定（姓名必填）
-手机号已注册 → 校验原密码后绑定（密码不对则拒绝，防止账号被他人绑定）
-      ↓
-签发令牌
-```
-
-设计要点：
-
-- **不把 openid 返回给前端**。否则任何人填一个 openid 就能把别人的账号绑到自己微信上。
-  票据是随机串、5 分钟有效、绑定成功即销毁。
-- 数据库 `sys_user.openid` 为 `VARCHAR(64) DEFAULT NULL` + 唯一索引。允许 NULL 是关键——
-  唯一索引下 MySQL 允许多个 NULL，未绑定微信的老用户不会互相冲突。
-- 该字段列上有 `@JsonIgnore`，任何接口都不会把 openid 下发。
-
-#### 12.3 表结构变更
-
-`init.sql` / `schema.sql` 已包含 `openid` 字段与 `uk_openid` 唯一索引。
-**已经在运行的库不用手工改**：`DataMigration` 每次启动会幂等地补列、补索引。
-
-#### 12.4 联调与排错
-
-微信侧接口的常见错误码（都已转成中文提示）：
-
-| 现象 | 原因 |
-|---|---|
-| 「服务端尚未配置微信登录」 | `.env` 没填 `WX_APPID` / `WX_SECRET`，或改了 `.env` 没 `up -d` 重建容器 |
-| 「微信授权码无效」（40029） | `manifest.json` 的 appid 与服务端 `WX_APPID` 不一致，或 code 已过期（5 分钟） |
-| 「服务端 AppSecret 配置有误」（40125） | Secret 复制错了，或已在公众平台重置 |
-| 「微信授权已过期」（绑定页） | 票据超 5 分钟，或服务重启过。重新点一次微信登录 |
-| 「该手机号已绑定其它微信」 | 该账号已绑过别的 openid。先用手机号密码登录 |
-| 「手机号或密码不正确」 | 绑定已有账号时密码填错。这是刻意设计，防止他人用手机号抢绑 |
-
-> 微信支付的 AppSecret 与小程序是同一套，但 `jscode2session` 不需要 IP 白名单，只要
-> 公众平台「开发管理 → 开发设置」里的 AppID/Secret 正确即可，服务器出口 IP 不用备案。
-
-#### 12.5 个人主体必须知道的两件事
-
-1. **不能做「一键获取手机号」**：`<button open-type="getPhoneNumber">` 在个人主体下会直接失败，
-   所以本方案让用户手输手机号。将来若主体升级为企业/个体工商户，可以把这个页面替换成
-   `getPhoneNumber` + `phonenumber.getPhoneNumber` 接口，体验会更快。
-2. **账号与微信的绑定关系是「一个手机号 = 一个账号 = 一个微信」**：想让一个账号换绑微信，
-   目前需要管理员直接改库（`UPDATE sys_user SET openid = NULL WHERE phone = 'xxx';` 后重新绑定）。
